@@ -10,6 +10,9 @@
 
 #define DEVICE_NAME "/dev/video0"
 #define BUFFER_COUNT 4
+//#ifndef VIDEO_MAX_PLANES
+#define VIDEO_MAX_PLANES 8  // 通常V4L2支持最多8个平面
+//#endif
 
 struct buffer{
 	struct v4l2_plane *planes;
@@ -64,7 +67,8 @@ void request_buffers()
     }
 }
 
-void query_and_map_buffers() {
+void query_and_map_buffers()
+{
     printf("2. 查询并映射缓冲区...\n");
     
     for (int i = 0; i < BUFFER_COUNT; ++i) 
@@ -103,7 +107,7 @@ void query_and_map_buffers() {
 		{
             buffers[i].planes[j] = planes[j];  // 保存平面信息
             
-            printf("     平面 %d: 长度=%zu, 偏移=%u\n", 
+            printf("     平面 %d: 长度=%u, 偏移=%u\n", 
                    j, planes[j].length, planes[j].m.mem_offset);
             
             // 内存映射
@@ -123,6 +127,95 @@ void query_and_map_buffers() {
     }
     printf("   所有缓冲区映射完成！\n");
 }
+
+void queue_all_buffers()
+{
+	printf("3. 将缓冲区加入采集队列...\n");
+	for(int i = 0; i < BUFFER_COUNT; ++i)
+	{
+		struct v4l2_buffer buf = {0};
+		struct v4l2_plane planes[VIDEO_MAX_PLANES] = {0};
+		
+		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+		buf.memory = V4L2_MEMORY_MMAP;
+		buf.index = i;
+		buf.length = 1;
+		buf.m.planes = planes;
+
+		if(xioctl(fd,VIDIOC_QBUF,&buf))
+		{
+			handle_error("VIDIOC_QBUF");
+		}
+		printf("   缓冲区 %d 已加入队列\n", i);
+	}
+	 printf(" 所有缓冲区已加入采集队列\n");
+}
+
+void start_streaming()
+{
+	printf("4. 启动视频流...\n");
+	enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+
+	if(xioctl(fd,VIDIOC_STREAMON,&type) == -1)
+	{
+		handle_error("VIDIOC_STREAMON");
+	}
+	printf("视频流已启动，开始采集图像...\n");
+
+	usleep(500000); // 等待500ms
+}
+
+void save_frame_to_file(int buf_index, size_t data_size, int frame_count)
+{
+    char filename[256];
+    snprintf(filename, sizeof(filename), "frame_%d.yuv", frame_count);
+    
+    FILE *file = fopen(filename, "wb");
+    if (!file)
+	{
+        perror("无法创建文件");
+        return;
+    }
+    
+    // 将图像数据写入文件
+    size_t written = fwrite(buffers[buf_index].start[0], 1, data_size, file);
+    fclose(file);
+    
+    printf("     已保存为: %s (%zu 字节)\n", filename, written);
+}
+
+void capture_frames()
+{
+	printf("5. 开始采集图像帧（采集5帧后停止）...\n");
+
+	for(int frame_count = 0;frame_count < 5; ++frame_count)
+	{
+		struct v4l2_buffer buf = {0};
+		struct v4l2_plane planes[VIDEO_MAX_PLANES] = {0};
+
+		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+		buf.memory = V4L2_MEMORY_MMAP;
+		buf.length = 1;
+		buf.m.planes = planes;
+
+		if (xioctl(fd, VIDIOC_DQBUF, &buf) == -1)
+		{
+            handle_error("VIDIOC_DQBUF");
+        }
+		printf("采集到第 %d 帧！\n", frame_count + 1);
+        printf("缓冲区索引: %d\n", buf.index);
+        printf("数据长度: %d 字节\n", buf.m.planes[0].bytesused);
+        printf("序列号: %d\n", buf.sequence);
+
+		save_frame_to_file(buf.index, buf.m.planes[0].bytesused, frame_count);
+
+		if (xioctl(fd, VIDIOC_QBUF, &buf) == -1)
+		{
+            handle_error("重新QBUF");
+        }
+	}
+}
+
 
 int main()
 {
@@ -151,5 +244,15 @@ int main()
 
 	query_and_map_buffers();
 
+	// 阶段三：启动采集
+    queue_all_buffers();    // 将缓冲区加入队列
+    start_streaming();      // 启动视频流
+    capture_frames();       // 采集图像
+    
+    // 阶段四：停止采集并清理资源
+//    stop_streaming();
+//   cleanup_resources();
+    
+    printf("\n图像采集完成！\n");
 	return 0;
 }
