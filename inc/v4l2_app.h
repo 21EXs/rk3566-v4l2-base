@@ -1,3 +1,6 @@
+#ifndef _V4L2_APP_H_
+#define _V4L2_APP_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,14 +11,6 @@
 #include <sys/mman.h>
 #include <linux/videodev2.h>
 
-#include "disp_manager.h"
-#include "drm_fourcc.h"
+void v4l2_start();
 
-#include "v4l2_app.h"
-
-
-int main()
-{
-	v4l2_start();
-	return 0;
-}
+#endif

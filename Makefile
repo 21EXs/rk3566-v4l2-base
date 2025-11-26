@@ -7,7 +7,10 @@ CC = $(CROSS_COMPILE)gcc
 # 目录路径
 SRC_DIR = /home/xs/桌面/Project/01-v4l2/src
 BUILD_DIR = $(SRC_DIR)/build
-
+INCLUDE_DIR = /home/xs/桌面/Project/01-v4l2/inc
+SOURCE_DIR = /home/xs/桌面/Project/01-v4l2/src
+SRCS = $(wildcard $(SOURCE_DIR)/*.c)
+OBJS = $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o)
 # 目标文件名
 TARGET = v4l2_app
 
@@ -18,7 +21,7 @@ INCLUDE_PATH = $(SYSROOT_PATH)/usr/include
 
 # 编译标志
 CFLAGS = -Wall -O2
-CFLAGS += -I$(INCLUDE_PATH)
+CFLAGS += -I$(INCLUDE_PATH) -I$(INCLUDE_DIR)
 # 添加sysroot确保使用正确的库
 CFLAGS += --sysroot=$(SYSROOT_PATH)
 
@@ -37,11 +40,11 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 # 编译和链接
-$(TARGET): $(BUILD_DIR)/main.o
+$(TARGET):  $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # 编译main.c
-$(BUILD_DIR)/main.o: $(SRC_DIR)/main.c
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # 检查环境
