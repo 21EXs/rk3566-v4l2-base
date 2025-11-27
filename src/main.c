@@ -12,10 +12,13 @@
 #include "drm_fourcc.h"
 
 #include "v4l2_app.h"
+#include "atomic_drm.h"
 
 
 int main()
 {
+    drm_start();
+    while(1);
 	v4l2_start();
 	return 0;
 }

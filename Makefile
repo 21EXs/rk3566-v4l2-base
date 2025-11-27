@@ -11,11 +11,11 @@ INCLUDE_DIR = /home/xs/桌面/Project/01-v4l2/inc
 SOURCE_DIR = /home/xs/桌面/Project/01-v4l2/src
 SRCS = $(wildcard $(SOURCE_DIR)/*.c)
 OBJS = $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o)
+
 # 目标文件名
 TARGET = v4l2_app
 
-# 使用正确的头文件路径（从find结果中选择）
-# 这个路径包含了完整的标准C库头文件
+# 使用正确的头文件路径
 SYSROOT_PATH = $(SDK_PATH)/buildroot/output/rockchip_rk3566/host/aarch64-buildroot-linux-gnu/sysroot
 INCLUDE_PATH = $(SYSROOT_PATH)/usr/include
 
@@ -29,21 +29,21 @@ CFLAGS += --sysroot=$(SYSROOT_PATH)
 LDFLAGS = -L$(SYSROOT_PATH)/usr/lib -L$(SYSROOT_PATH)/lib
 LDFLAGS += --sysroot=$(SYSROOT_PATH)
 
-# 链接库
-LIBS = -lv4l2 -lpthread
+# 链接库 - 修复：添加 -ldrm
+LIBS = -lv4l2 -lpthread -ldrm
 
 # 默认目标
-all: check-env $(BUILD_DIR) $(TARGET)
+all: check-env check-drm $(BUILD_DIR) $(TARGET)
 
 # 创建构建目录
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# 编译和链接
-$(TARGET):  $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+# 修复：链接顺序很重要！OBJS要在LIBS前面
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
-# 编译main.c
+# 编译源文件
 $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -63,16 +63,27 @@ check-env:
 		echo "✗ 错误: 未找到标准头文件"; \
 		exit 1; \
 	fi
-	@echo "检查v4l2头文件..."
-	@if [ -f "$(INCLUDE_PATH)/linux/videodev2.h" ]; then \
-		echo "✓ 找到videodev2.h"; \
+
+# 新增：检查libdrm库
+check-drm:
+	@echo "检查libdrm库..."
+	@if [ -f "$(SYSROOT_PATH)/usr/include/libdrm/drm.h" ]; then \
+		echo "✓ 找到drm.h头文件"; \
 	else \
-		echo "⚠ 警告: 未找到videodev2.h，尝试其他路径"; \
-		find $(SYSROOT_PATH) -name "videodev2.h" 2>/dev/null | head -1 | while read file; do \
-			echo "找到videodev2.h在: $$file"; \
-			dirname "$$file" | head -1 | while read dir; do \
-				echo "添加额外包含路径: $$dir"; \
-			done; \
+		echo "⚠ 警告: 未找到drm.h，尝试查找..."; \
+		find $(SYSROOT_PATH) -name "drm.h" 2>/dev/null | head -1 | while read file; do \
+			echo "找到drm.h在: $$file"; \
+			dir=$$(dirname $$file); \
+			echo "添加额外包含路径: -I$$dir"; \
+		done; \
+	fi
+	@echo "检查libdrm库文件..."
+	@if [ -f "$(SYSROOT_PATH)/usr/lib/libdrm.so" ]; then \
+		echo "✓ 找到libdrm.so"; \
+	else \
+		echo "⚠ 警告: 未找到libdrm.so，尝试查找..."; \
+		find $(SYSROOT_PATH) -name "libdrm.so*" 2>/dev/null | head -3 | while read file; do \
+			echo "找到: $$file"; \
 		done; \
 	fi
 
@@ -86,12 +97,24 @@ info:
 	@echo "头文件路径: $(INCLUDE_PATH)"
 	@echo "编译标志: $(CFLAGS)"
 	@echo "链接标志: $(LDFLAGS)"
+	@echo "链接库: $(LIBS)"
 
 # 测试编译（只编译不链接）
 test-compile: $(BUILD_DIR)
-	@echo "测试编译..."
-	$(CC) $(CFLAGS) -E $(SRC_DIR)/main.c > $(BUILD_DIR)/main.i 2>&1 && echo "✓ 预处理成功" || echo "✗ 预处理失败"
-	$(CC) $(CFLAGS) -S $(SRC_DIR)/main.c -o $(BUILD_DIR)/main.s 2>&1 && echo "✓ 编译成功" || echo "✗ 编译失败"
+	@echo "测试编译atomic_drm.c..."
+	$(CC) $(CFLAGS) -c $(SRC_DIR)/atomic_drm.c -o $(BUILD_DIR)/atomic_drm_test.o
+	@echo "检查目标文件符号..."
+	$(CROSS_COMPILE)nm $(BUILD_DIR)/atomic_drm_test.o | grep -E "drmOpen|drmModeGetResources" || echo "未定义符号正常（将在链接时解析）"
+
+# 测试链接
+test-link: $(BUILD_DIR)/atomic_drm.o
+	@echo "测试链接..."
+	$(CC) $(LDFLAGS) -o $(BUILD_DIR)/test_link $(BUILD_DIR)/atomic_drm.o -ldrm
+	@if [ $$? -eq 0 ]; then \
+		echo "✓ 链接测试通过"; \
+	else \
+		echo "✗ 链接测试失败"; \
+	fi
 
 # 清理生成的文件
 clean:
@@ -102,9 +125,11 @@ help:
 	@echo "可用目标:"
 	@echo "  all           - 编译项目（默认）"
 	@echo "  check-env     - 检查编译环境"
+	@echo "  check-drm     - 检查libdrm库"
 	@echo "  info          - 显示详细路径信息"
 	@echo "  test-compile  - 测试编译过程"
+	@echo "  test-link     - 测试链接过程"
 	@echo "  clean         - 清理生成的文件"
 	@echo "  help          - 显示此帮助信息"
 
-.PHONY: all clean help check-env info test-compile
+.PHONY: all clean help check-env check-drm info test-compile test-link
