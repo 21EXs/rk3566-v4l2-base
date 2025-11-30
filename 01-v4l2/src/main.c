@@ -17,8 +17,9 @@
 
 int main()
 {
+    v4l2_start();
     drm_start();
     while(1);
-	v4l2_start();
+	
 	return 0;
 }
