@@ -5,7 +5,7 @@ CROSS_COMPILE = $(TOOLCHAIN_PATH)/aarch64-linux-gnu-
 CC = $(CROSS_COMPILE)gcc
 
 # 项目根目录
-PROJECT_ROOT = /home/xs/桌面/Project/ssh/rk3566-v4l2-base/01-v4l2
+PROJECT_ROOT = /home/xs/桌面/Project/ssh/rk3566-v4l2-base/02-shm
 
 # 目录路径
 SRC_DIR = $(PROJECT_ROOT)/src
@@ -16,7 +16,7 @@ SRCS = $(wildcard $(SOURCE_DIR)/*.c)
 OBJS = $(SRCS:$(SOURCE_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 # 目标文件名
-TARGET = $(PROJECT_ROOT)/v4l2_app
+TARGET = $(PROJECT_ROOT)/shm_app
 
 # 使用正确的头文件路径
 SYSROOT_PATH = $(SDK_PATH)/buildroot/output/rockchip_rk3566/host/aarch64-buildroot-linux-gnu/sysroot
@@ -32,17 +32,18 @@ CFLAGS += --sysroot=$(SYSROOT_PATH)
 LDFLAGS = -L$(SYSROOT_PATH)/usr/lib -L$(SYSROOT_PATH)/lib
 LDFLAGS += --sysroot=$(SYSROOT_PATH)
 
-# 链接库 - 修复：添加 -ldrm
-LIBS = -lv4l2 -lpthread -ldrm
+# 链接库 - 02-shm项目可能需要不同的库
+# 如果使用共享内存，可能需要 -lrt
+LIBS = -lpthread -lrt
 
 # 默认目标
-all: check-env check-drm $(BUILD_DIR) $(TARGET)
+all: check-env $(BUILD_DIR) $(TARGET)
 
 # 创建构建目录
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# 修复：链接顺序很重要！OBJS要在LIBS前面
+# 链接目标
 $(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
@@ -67,32 +68,26 @@ check-env:
 		exit 1; \
 	fi
 
-# 新增：检查libdrm库
-check-drm:
-	@echo "检查libdrm库..."
-	@if [ -f "$(SYSROOT_PATH)/usr/include/libdrm/drm.h" ]; then \
-		echo "✓ 找到drm.h头文件"; \
+# 检查项目结构
+check-project:
+	@echo "检查项目结构..."
+	@if [ -d "$(SRC_DIR)" ]; then \
+		echo "✓ 源文件目录存在: $(SRC_DIR)"; \
+		ls -la $(SRC_DIR)/*.c 2>/dev/null | wc -l | xargs echo "找到源文件数量:"; \
 	else \
-		echo "⚠ 警告: 未找到drm.h，尝试查找..."; \
-		find $(SYSROOT_PATH) -name "drm.h" 2>/dev/null | head -1 | while read file; do \
-			echo "找到drm.h在: $$file"; \
-			dir=$$(dirname $$file); \
-			echo "添加额外包含路径: -I$$dir"; \
-		done; \
+		echo "✗ 错误: 源文件目录不存在: $(SRC_DIR)"; \
+		exit 1; \
 	fi
-	@echo "检查libdrm库文件..."
-	@if [ -f "$(SYSROOT_PATH)/usr/lib/libdrm.so" ]; then \
-		echo "✓ 找到libdrm.so"; \
+	@if [ -d "$(INCLUDE_DIR)" ]; then \
+		echo "✓ 头文件目录存在: $(INCLUDE_DIR)"; \
 	else \
-		echo "⚠ 警告: 未找到libdrm.so，尝试查找..."; \
-		find $(SYSROOT_PATH) -name "libdrm.so*" 2>/dev/null | head -3 | while read file; do \
-			echo "找到: $$file"; \
-		done; \
+		echo "⚠ 警告: 头文件目录不存在: $(INCLUDE_DIR)"; \
 	fi
 
 # 显示详细路径信息
 info:
 	@echo "项目根目录: $(PROJECT_ROOT)"
+	@echo "项目名称: 02-shm"
 	@echo "编译器路径: $(CC)"
 	@echo "源文件目录: $(SRC_DIR)"
 	@echo "构建目录: $(BUILD_DIR)"
@@ -107,37 +102,23 @@ info:
 	@echo "源文件: $(SRCS)"
 	@echo "目标文件: $(OBJS)"
 
-# 测试编译（只编译不链接）
-test-compile: $(BUILD_DIR)
-	@echo "测试编译atomic_drm.c..."
-	$(CC) $(CFLAGS) -c $(SRC_DIR)/atomic_drm.c -o $(BUILD_DIR)/atomic_drm_test.o
-	@echo "检查目标文件符号..."
-	$(CROSS_COMPILE)nm $(BUILD_DIR)/atomic_drm_test.o | grep -E "drmOpen|drmModeGetResources" || echo "未定义符号正常（将在链接时解析）"
-
-# 测试链接
-test-link: $(BUILD_DIR)/atomic_drm.o
-	@echo "测试链接..."
-	$(CC) $(LDFLAGS) -o $(BUILD_DIR)/test_link $(BUILD_DIR)/atomic_drm.o -ldrm
-	@if [ $$? -eq 0 ]; then \
-		echo "✓ 链接测试通过"; \
-	else \
-		echo "✗ 链接测试失败"; \
-	fi
-
 # 清理生成的文件
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
+
+# 完全清理
+distclean: clean
+	@echo "已清理所有生成文件"
 
 # 显示帮助信息
 help:
 	@echo "可用目标:"
 	@echo "  all           - 编译项目（默认）"
 	@echo "  check-env     - 检查编译环境"
-	@echo "  check-drm     - 检查libdrm库"
+	@echo "  check-project - 检查项目结构"
 	@echo "  info          - 显示详细路径信息"
-	@echo "  test-compile  - 测试编译过程"
-	@echo "  test-link     - 测试链接过程"
 	@echo "  clean         - 清理生成的文件"
+	@echo "  distclean     - 完全清理（同clean）"
 	@echo "  help          - 显示此帮助信息"
 
-.PHONY: all clean help check-env check-drm info test-compile test-link
+.PHONY: all clean distclean help check-env check-project info

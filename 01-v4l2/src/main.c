@@ -7,19 +7,19 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <linux/videodev2.h>
-
 #include "disp_manager.h"
 #include "drm_fourcc.h"
-
 #include "v4l2_app.h"
 #include "atomic_drm.h"
-
+#include "shm.h"
 
 int main()
 {
-    v4l2_start();
-    drm_start();
-    while(1);
+    Shm_Create();
+
+    // v4l2_start();
+    // drm_start();
+    // while(1);
 	
 	return 0;
 }
