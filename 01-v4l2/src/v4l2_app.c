@@ -12,8 +12,10 @@ struct buffer{
 	size_t *length;
 };
 
-static struct buffer *buffers = NULL;
+struct buffer *buffers = NULL;
+struct shared_memory *shm_ptr = NULL;
 static int fd = -1;
+int shm_fd;
 
 void handle_error(const char* operation) 
 {
@@ -174,11 +176,95 @@ void save_frame_to_file(int buf_index, size_t data_size, int frame_count)
     printf("     已保存为: %s (%zu 字节)\n", filename, written);
 }
 
+
+struct shared_memory* Frame_Shm()//获取指向加上NV21偏移量的地址的指针，不是获取共享内存的指针！！！
+{
+	size_t nv21_data_size = NV21_SIZE(WIDTH, HEIGHT);
+    size_t argb_data_size = ARGB_SIZE(WIDTH, HEIGHT);
+	size_t total_size = sizeof(struct shared_memory) + nv21_data_size + argb_data_size;
+
+	shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
+    if (shm_fd == -1) 
+    {
+        perror("shm_open失败");
+        return NULL;
+    }
+	
+	shm_ptr = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (shm_ptr == MAP_FAILED) 
+    {
+        perror("mmap失败");
+        close(shm_fd);
+        return NULL;
+    }
+	
+	// close(shm_fd);
+
+	printf("成功映射共享内存，大小: %zu 字节\n", total_size);
+    printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset);
+    printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset);
+
+	return shm_ptr;
+}
+
+int Write_Frame_Shm(struct shared_memory* shm, uint8_t* v4l2_buffer, size_t size)
+{
+	if (!shm || !v4l2_buffer) 
+	{
+        printf("错误: 无效参数\n");
+        return -1;
+    }
+
+	// 1. 获取NV21数据指针
+    uint8_t* nv21_data = Get_NV21_Data(shm);
+    if (!nv21_data) 
+	{
+        printf("错误: 无法获取NV21数据指针\n");
+        return -1;
+    }
+	printf("NV21数据地址: %p, 写入大小: %zu\n", nv21_data, size);
+
+	// 2. 保护访问（获取信号量）
+    sem_wait(&shm->nv21.semaphore);
+
+	// 3. 复制数据,复制到共享内存
+    memcpy(nv21_data, v4l2_buffer, size);
+	printf("     已写入共享内存: %zu 字节\n", size);
+
+	// 4. 更新元数据
+    shm->nv21.meta.is_valid = 1;
+
+	// 5. 释放信号量
+    sem_post(&shm->nv21.semaphore);
+
+	return 0;
+}
+
+void save_frame_to_shm(int buf_index, size_t data_size, int frame_count)
+{
+    printf("帧 %d: 写入共享内存\n", frame_count);
+	if (!shm_ptr) 
+	{
+        printf("错误：共享内存指针为空\n");
+        return;
+    }
+    // 调用写入函数
+    int ret = Write_Frame_Shm(shm_ptr, buffers[buf_index].start[0], data_size);
+    if (ret != 0) 
+	{
+        printf("     写入共享内存失败\n");
+    } 
+	else 
+	{
+        printf("     已写入共享内存: %zu 字节\n", data_size);
+    }
+}
+
 void capture_frames()
 {
 	printf("5. 开始采集图像帧（采集5帧后停止）...\n");
 
-	for(int frame_count = 0;frame_count < 5; ++frame_count)
+	for(int frame_count = 0;frame_count < 1; ++frame_count)
 	{
 		struct v4l2_buffer buf = {0};
 		struct v4l2_plane planes[VIDEO_MAX_PLANES] = {0};
@@ -198,7 +284,8 @@ void capture_frames()
         printf("序列号: %d\n", buf.sequence);
 
 		save_frame_to_file(buf.index, buf.m.planes[0].bytesused, frame_count);
-
+		save_frame_to_shm(buf.index, buf.m.planes[0].bytesused, frame_count);
+		
 		if (xioctl(fd, VIDIOC_QBUF, &buf) == -1)
 		{
             handle_error("重新QBUF");
@@ -208,8 +295,15 @@ void capture_frames()
 
 void v4l2_start()
 {
-  printf("=== V4L2 多平面缓冲区设置 ===\n");
+    printf("=== V4L2 多平面缓冲区设置 ===\n");
 	
+	shm_ptr = Frame_Shm();
+    if (!shm_ptr) 
+    {
+        fprintf(stderr, "错误：共享内存映射失败，v4l2进程无法继续\n");
+        return;  // 或者exit(1)
+    }
+
 	printf("打开设备 %s...\n", DEVICE_NAME);
 	fd = open(DEVICE_NAME,O_RDWR | O_NONBLOCK);
 	if(fd == -1)

@@ -11,18 +11,6 @@ void Shm_Create()
     struct shared_memory *shm = mmap(NULL, total_size, PROT_READ|PROT_WRITE, 
                                     MAP_SHARED, shm_fd, 0);
 
-    printf("=== 共享内存布局 ===\n");
-    printf("结构体基地址: %p\n", shm);
-    printf("结构体大小: %zu 字节\n", sizeof(struct shared_memory));
-    printf("NV21数据大小: %zu 字节\n", nv21_data_size);
-    printf("ARGB数据大小: %zu 字节\n", argb_data_size);
-    printf("总大小: %zu 字节\n", total_size);
-    printf("NV21偏移量: %u 字节\n", shm->nv21.data_offset);
-    printf("NV21绝对地址: %p\n", (uint8_t*)shm + shm->nv21.data_offset);
-    printf("ARGB偏移量: %u 字节\n", shm->argb.data_offset);
-    printf("ARGB绝对地址: %p\n", (uint8_t*)shm + shm->argb.data_offset);
-    printf("==================\n");
-
     shm->nv21.meta.width = WIDTH;
     shm->nv21.meta.height = HEIGHT;
     shm->nv21.meta.format = 0;  // NV21

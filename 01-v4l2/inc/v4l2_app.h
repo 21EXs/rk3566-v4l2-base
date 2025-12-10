@@ -11,6 +11,8 @@
 #include <sys/mman.h>
 #include <linux/videodev2.h>
 
+#include "shm.h"
+
 void v4l2_start();
 
 #endif

@@ -13,13 +13,12 @@
 #include "atomic_drm.h"
 #include "shm.h"
 
+extern struct shared_memory *shm_ptr;
+
 int main()
 {
     Shm_Create();
-
-    // v4l2_start();
-    // drm_start();
-    // while(1);
-	
+    v4l2_start();
+    sleep(1);
 	return 0;
 }

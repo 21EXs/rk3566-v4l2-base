@@ -2,6 +2,8 @@
 
 extern struct shared_memory *shm_ptr;
 
+
+
 int create_test_pattern(uint32_t *buffer, int width, int height)
 {
   for(uint16_t y = 0;y < height;y++)
@@ -136,44 +138,95 @@ int create_framebuffer(struct drm_device *dev, int width, int height)
 
 int Drm_Show(struct shared_memory* shm)
 {
-    struct drm_device my_dev;
-	memset(&my_dev, 0, sizeof(struct drm_device));
-	system("killall weston ");
-
-    uint8_t* argb888_data = Get_ARGB_Data(shm);
-    uint8_t *dst = (uint8_t*)my_dev.fb_data;
-    uint8_t *src = argb888_data;
-    for (int y = 0; y < HEIGHT; y++) // 逐行复制，确保正确处理pitch
-    {        
-        memcpy(dst, src, WIDTH * 4);
-        dst += my_dev.fb_pitch;  // 使用实际的pitch
-        src += WIDTH * 4;        // 源数据是紧密排列的
-    }
-
-    sleep(1);
-	if (init_drm_device(&my_dev) < 0) 
-	{
+    struct drm_device my_dev = {0};
+    
+    // 1. 强制停止 Weston 并防止重启
+    printf("强制停止Weston显示服务...\n");
+    system("killall -9 weston 2>/dev/null");
+    system("systemctl stop weston 2>/dev/null");
+    system("systemctl mask weston 2>/dev/null");  // 防止自动启动
+    system("pkill -9 weston 2>/dev/null");
+    sleep(3);
+    
+    // 2. 检查是否还有进程占用DRM
+    printf("检查占用DRM的进程...\n");
+    system("lsof /dev/dri/card0 2>/dev/null | head -20");
+    system("fuser -v /dev/dri/card0 2>/dev/null");
+    
+    // 2. 初始化DRM设备
+    if (init_drm_device(&my_dev) < 0) 
+    {
         printf("DRM设备初始化失败\n");
         return -1;
     }
+    
+    // 4. 先禁用所有CRTC
+    printf("禁用所有CRTC...\n");
+    for (int i = 0; i < my_dev.res->count_crtcs; i++) 
+    {
+        uint32_t crtc_id = my_dev.res->crtcs[i];
+        int ret = drmModeSetCrtc(my_dev.fd, crtc_id, 0, 0, 0, NULL, 0, NULL);
+        if (ret < 0) 
+        {
+            printf("  禁用CRTC %u 失败: %s\n", crtc_id, strerror(errno));
+        } 
+        else 
+        {
+            printf("  已禁用CRTC %u\n", crtc_id);
+        }
+    }
+    sleep(1);
+    
+    // 5. 清理所有未使用的framebuffer
+    printf("清理未使用的framebuffer...\n");
+    drmModeFBPtr fb = NULL;
+    for (uint32_t fb_id = 1; fb_id < 200; fb_id++) 
+    {  // 假设fb_id小于200
+        if (drmModeRmFB(my_dev.fd, fb_id) == 0) 
+        {
+            printf("  已删除framebuffer %u\n", fb_id);
+        }
+    }
+    
 
-	if (create_framebuffer(&my_dev, WIDTH, HEIGHT) < 0) 
-	{
+    // 3. 创建framebuffer
+    if (create_framebuffer(&my_dev, WIDTH, HEIGHT) < 0) 
+    {
         printf("帧缓冲创建失败\n");
         return -1;
     }
-
-	create_test_pattern((uint32_t*)my_dev.fb_data, WIDTH, HEIGHT);
-
+    
+    // 4. 从共享内存获取数据并复制到framebuffer
+    uint8_t* argb888_data = Get_ARGB_Data(shm);
+    if (!argb888_data) {
+        printf("获取ARGB数据失败\n");
+        return -1;
+    }
+    
+    uint8_t *dst = (uint8_t*)my_dev.fb_data;
+    uint8_t *src = argb888_data;
+    
+    for (int y = 0; y < HEIGHT; y++) 
+    {        
+        memcpy(dst, src, WIDTH * 4);
+        dst += my_dev.fb_pitch;
+        src += WIDTH * 4;
+    }
+    
+    // 5. 设置CRTC显示
     if (drmModeSetCrtc(my_dev.fd, my_dev.crtc_id, my_dev.fb_id, 
                        0, 0, &my_dev.conn_id, 1, &my_dev.mode) < 0) 
     {
         printf("显示启动失败: %s\n", strerror(errno));
         return -1;
     }
+    
     printf("显示成功！按Ctrl+C退出\n");
-
-    sleep(10);  // 显示10秒钟
+    
+    // 6. 保持显示
+    sleep(10);
+    
+    // 7. 清理资源
     if (my_dev.fb_data) 
     {
         munmap(my_dev.fb_data, my_dev.fb_size);
@@ -194,13 +247,6 @@ int Drm_Show(struct shared_memory* shm)
     {
         close(my_dev.fd);
     }
-}
-
-int drm_start()
-{
-
-
-    Drm_Show(shm_ptr);
-
-
+    
+    return 0;
 }
