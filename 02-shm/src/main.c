@@ -11,42 +11,96 @@ static struct shared_memory *shm_ptr = NULL;
 static int fd = -1;
 int shm_fd;
 
+// int NV21_To_ARGB888(unsigned char* input, unsigned char* output, int width, int height) 
+// {
+//     if (width < 1 || height < 1 || input == NULL || output == NULL)
+//         return 0;
+    
+//     int frame_size = width * height;
+//     int uv_offset = frame_size;
+//     uint32_t* argb = (uint32_t*)output;
+    
+//     for (int y = 0; y < height; y++) 
+//     {
+//         for (int x = 0; x < width; x++) 
+//         {
+//             int y_index = y * width + x;
+//             int uv_index = (y/2) * (width/2) * 2 + (x/2) * 2;
+            
+//             int y_val = input[y_index];
+//             int v_val = input[uv_offset + uv_index];      // V分量
+//             int u_val = input[uv_offset + uv_index + 1];  // U分量
+            
+//             // YUV to RGB转换（整数运算）
+//             int c = y_val - 16;
+//             int d = u_val - 128;
+//             int e = v_val - 128;
+            
+//             int r = (298 * c + 409 * e + 128) >> 8;
+//             int g = (298 * c - 100 * d - 208 * e + 128) >> 8;
+//             int b = (298 * c + 516 * d + 128) >> 8;
+            
+//             r = (r > 255) ? 255 : (r < 0) ? 0 : r;
+//             g = (g > 255) ? 255 : (g < 0) ? 0 : g;
+//             b = (b > 255) ? 255 : (b < 0) ? 0 : b;
+            
+//             argb[y_index] = 0xFF000000 | (r << 16) | (g << 8) | b;
+//         }
+//     }
+//     return 1;
+// }
+
 int NV21_To_ARGB888(unsigned char* input, unsigned char* output, int width, int height) 
 {
     if (width < 1 || height < 1 || input == NULL || output == NULL)
         return 0;
-    // bit depth
-    int depth = 3;
-    int nvOff = width * height;
-    int i, j, yIndex = 0;
-    int y, u, v;
-    int r, g, b, nvIndex = 0;
-    unsigned char* yuvData = input;
-    unsigned char* rgbData = output;
-    for (i = 0; i < height; i++) 
+    
+    int frame_size = width * height;
+    int uv_offset = frame_size;
+    uint32_t* argb = (uint32_t*)output;
+    
+    for (int y = 0; y < height; y++) 
     {
-        for (j = 0; j < width; j++, ++yIndex) 
+        for (int x = 0; x < width; x++) 
         {
-            nvIndex = (i / 2) * width + j - j % 2;
-            y = yuvData[yIndex] & 0xff;
-            v = yuvData[nvOff + nvIndex] & 0xff;
-            u = yuvData[nvOff + nvIndex + 1] & 0xff;
- 
-            // yuv to rgb
-            r = y + ((351 * (v - 128)) >> 8);  //r
-            g = y - ((179 * (v - 128) + 86 * (u - 128)) >> 8); //g
-            b = y + ((443 * (u - 128)) >> 8); //b
- 
-            r = ((r > 255) ? 255 : (r < 0) ? 0 : r);
-            g = ((g > 255) ? 255 : (g < 0) ? 0 : g);
-            b = ((b > 255) ? 255 : (b < 0) ? 0 : b);
-            // RGB格式的图像存储的顺序，并非像字面的顺序，而是以：B、G、R的顺序进行存储。
-            *(rgbData + yIndex * depth + 0) = b;
-            *(rgbData + yIndex * depth + 1) = g;
-            *(rgbData + yIndex * depth + 2) = r;
- 
+            int y_index = y * width + x;
+            int uv_index = (y/2) * (width/2) * 2 + (x/2) * 2;
+            
+            int y_val = input[y_index];
+            int v_val = input[uv_offset + uv_index];      // V分量
+            int u_val = input[uv_offset + uv_index + 1];  // U分量
+            
+            // YUV to RGB转换（整数运算）
+            int c = y_val - 16;
+            int d = u_val - 128;
+            int e = v_val - 128;
+            
+            int r = (298 * c + 409 * e + 128) >> 8;
+            int g = (298 * c - 100 * d - 208 * e + 128) >> 8;
+            int b = (298 * c + 516 * d + 128) >> 8;
+            
+            r = (r > 255) ? 255 : (r < 0) ? 0 : r;
+            g = (g > 255) ? 255 : (g < 0) ? 0 : g;
+            b = (b > 255) ? 255 : (b < 0) ? 0 : b;
+            
+            argb[y_index] = 0xFF000000 | (r << 16) | (g << 8) | b;
         }
     }
+    
+    // 保存ARGB数据到文件
+    FILE* fp = fopen("output_argb.raw", "wb");
+    if (fp != NULL) 
+    {
+        fwrite(output, 1, width * height * 4, fp);
+        fclose(fp);
+        printf("ARGB文件已保存: output_argb.raw, 大小: %dx%d, %d字节\n", 
+               width, height, width * height * 4);
+    }
+    else 
+    {
+        printf("无法创建ARGB文件\n");
+    }
+    
     return 1;
 }
 

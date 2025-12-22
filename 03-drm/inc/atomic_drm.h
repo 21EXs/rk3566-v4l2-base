@@ -14,8 +14,8 @@
 #include "disp_manager.h"
 #include "drm_fourcc.h"
 #include "shm.h"
-#define WIDTH   640
-#define HEIGHT  480
+#define WIDTH   720
+#define HEIGHT  1280
 
 struct drm_device {
     int fd;                          // 设备文件描述符
@@ -35,5 +35,4 @@ int create_test_pattern(uint32_t *buffer, int width, int height);
 int init_drm_device(struct drm_device *dev);
 int create_framebuffer(struct drm_device *dev, int width, int height);
 int drm_start();
-int Drm_Show(struct shared_memory* shm);
 #endif
