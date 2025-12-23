@@ -11,66 +11,31 @@ static struct shared_memory *shm_ptr = NULL;
 static int fd = -1;
 int shm_fd;
 
-// int NV21_To_ARGB888(unsigned char* input, unsigned char* output, int width, int height) 
-// {
-//     if (width < 1 || height < 1 || input == NULL || output == NULL)
-//         return 0;
-    
-//     int frame_size = width * height;
-//     int uv_offset = frame_size;
-//     uint32_t* argb = (uint32_t*)output;
-    
-//     for (int y = 0; y < height; y++) 
-//     {
-//         for (int x = 0; x < width; x++) 
-//         {
-//             int y_index = y * width + x;
-//             int uv_index = (y/2) * (width/2) * 2 + (x/2) * 2;
-            
-//             int y_val = input[y_index];
-//             int v_val = input[uv_offset + uv_index];      // V分量
-//             int u_val = input[uv_offset + uv_index + 1];  // U分量
-            
-//             // YUV to RGB转换（整数运算）
-//             int c = y_val - 16;
-//             int d = u_val - 128;
-//             int e = v_val - 128;
-            
-//             int r = (298 * c + 409 * e + 128) >> 8;
-//             int g = (298 * c - 100 * d - 208 * e + 128) >> 8;
-//             int b = (298 * c + 516 * d + 128) >> 8;
-            
-//             r = (r > 255) ? 255 : (r < 0) ? 0 : r;
-//             g = (g > 255) ? 255 : (g < 0) ? 0 : g;
-//             b = (b > 255) ? 255 : (b < 0) ? 0 : b;
-            
-//             argb[y_index] = 0xFF000000 | (r << 16) | (g << 8) | b;
-//         }
-//     }
-//     return 1;
-// }
-
-int NV21_To_ARGB888(unsigned char* input, unsigned char* output, int width, int height) 
+int NV21_To_BGRA(unsigned char* input, unsigned char* output, int width, int height) 
 {
     if (width < 1 || height < 1 || input == NULL || output == NULL)
         return 0;
     
     int frame_size = width * height;
     int uv_offset = frame_size;
-    uint32_t* argb = (uint32_t*)output;
+    
+    // 使用字节指针
+    uint8_t* bgra = (uint8_t*)output;
     
     for (int y = 0; y < height; y++) 
     {
         for (int x = 0; x < width; x++) 
         {
             int y_index = y * width + x;
-            int uv_index = (y/2) * (width/2) * 2 + (x/2) * 2;
+            
+            // NV21 UV索引计算
+            int uv_index = (y/2) * width + (x/2) * 2;
             
             int y_val = input[y_index];
             int v_val = input[uv_offset + uv_index];      // V分量
             int u_val = input[uv_offset + uv_index + 1];  // U分量
             
-            // YUV to RGB转换（整数运算）
+            // YUV to RGB转换
             int c = y_val - 16;
             int d = u_val - 128;
             int e = v_val - 128;
@@ -80,30 +45,21 @@ int NV21_To_ARGB888(unsigned char* input, unsigned char* output, int width, int 
             int b = (298 * c + 516 * d + 128) >> 8;
             
             r = (r > 255) ? 255 : (r < 0) ? 0 : r;
-            g = (g > 255) ? 255 : (g < 0) ? 0 : g;
+            g = (g> 255) ? 255 : (g < 0) ? 0 : g;
             b = (b > 255) ? 255 : (b < 0) ? 0 : b;
             
-            argb[y_index] = 0xFF000000 | (r << 16) | (g << 8) | b;
+            int pixel_index = y_index * 4;
+            
+            // 直接输出 DRM 需要的 BGRA 格式
+            bgra[pixel_index] = b;         // Blue
+            bgra[pixel_index + 1] = g;     // Green
+            bgra[pixel_index + 2] = r;     // Red
+            bgra[pixel_index + 3] = 0xFF;  // Alpha (不透明)
         }
-    }
-    
-    // 保存ARGB数据到文件
-    FILE* fp = fopen("output_argb.raw", "wb");
-    if (fp != NULL) 
-    {
-        fwrite(output, 1, width * height * 4, fp);
-        fclose(fp);
-        printf("ARGB文件已保存: output_argb.raw, 大小: %dx%d, %d字节\n", 
-               width, height, width * height * 4);
-    }
-    else 
-    {
-        printf("无法创建ARGB文件\n");
     }
     
     return 1;
 }
-
 struct shared_memory* Shm_Shm()
 {
 	if (shm_ptr != NULL) 
@@ -143,7 +99,7 @@ void Take_ARGB_Shm(struct shared_memory* shm)
 {
     uint8_t* nv21_data = Get_NV21_Data(shm);
     uint8_t* argb888_data = Get_ARGB_Data(shm);
-    NV21_To_ARGB888(nv21_data, argb888_data, WIDTH, HEIGHT);
+    NV21_To_BGRA(nv21_data, argb888_data, WIDTH, HEIGHT);
     printf("已完成nv21转化为argb888格式 \n");
     sleep(2);
 }
