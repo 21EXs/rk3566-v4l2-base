@@ -230,30 +230,30 @@ int drm_start()
     printf("图像显示位置: (%d, %d)\n", start_x, start_y);
     
     // 直接将ARGB数据居中拷贝到帧缓冲
-    uint8_t* src = argb_data_ptr;
-    uint8_t* dst = (uint8_t*)my_dev.fb_data;
-    for (int y = 0; y < img_height && (start_y + y) < screen_height; y++)
-    {
-        int src_index = y * img_width * 4;
-        int dst_index = ((start_y + y) * screen_width + start_x) * 4;
-        
-        // 直接拷贝一行像素（BGRA格式，4字节/像素）
-        memcpy(dst + dst_index, src + src_index, img_width * 4);
-    }
-    // 显示
-    if (drmModeSetCrtc(my_dev.fd, my_dev.crtc_id, my_dev.fb_id, 
-                       0, 0, &my_dev.conn_id, 1, &my_dev.mode) < 0) 
-    {
-        printf("显示启动失败: %s\n", strerror(errno));
-        return -1;
-    }
-    
-    printf("显示已启动，按Ctrl+C退出\n");
-    
-    // 保持显示直到被中断
+    uint8_t* src = 0;
+    uint8_t* dst = 0;
+
     while (1) 
     {
-        sleep(1);
+        sem_wait(&shm_ptr->sem.convert_done);
+        src = argb_data_ptr;
+        dst = (uint8_t*)my_dev.fb_data;
+        for (int y = 0; y < img_height && (start_y + y) < screen_height; y++)
+        {
+            int src_index = y * img_width * 4;
+            int dst_index = ((start_y + y) * screen_width + start_x) * 4;
+            
+            // 直接拷贝一行像素（BGRA格式，4字节/像素）
+            memcpy(dst + dst_index, src + src_index, img_width * 4);
+        }
+        // 显示
+        if (drmModeSetCrtc(my_dev.fd, my_dev.crtc_id, my_dev.fb_id, 
+                        0, 0, &my_dev.conn_id, 1, &my_dev.mode) < 0) 
+        {
+            printf("显示启动失败: %s\n", strerror(errno));
+            return -1;
+        }
+        sem_post(&shm_ptr->sem.display_done);
     }
     
     // 清理资源

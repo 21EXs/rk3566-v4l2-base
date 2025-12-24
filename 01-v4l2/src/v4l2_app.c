@@ -215,34 +215,33 @@ int Write_Frame_Shm(struct shared_memory* shm, uint8_t* v4l2_buffer, size_t size
         return -1;
     }
 
-	// 1. 获取NV21数据指针
+	// 保护访问（获取信号量）
+    sem_wait(&shm->sem.display_done);
+
+	//  获取NV21数据指针
     uint8_t* nv21_data = Get_NV21_Data(shm);
     if (!nv21_data) 
 	{
         printf("错误: 无法获取NV21数据指针\n");
+        sem_post(&shm->sem.display_done);
         return -1;
     }
-	printf("NV21数据地址: %p, 写入大小: %zu\n", nv21_data, size);
 
-	// 2. 保护访问（获取信号量）
-    sem_wait(&shm->nv21.semaphore);
-
-	// 3. 复制数据,复制到共享内存
     memcpy(nv21_data, v4l2_buffer, size);
-	printf("     已写入共享内存: %zu 字节\n", size);
+	// printf("     已写入共享内存: %zu 字节\n", size);
 
 	// 4. 更新元数据
     shm->nv21.meta.is_valid = 1;
 
 	// 5. 释放信号量
-    sem_post(&shm->nv21.semaphore);
+    sem_post(&shm->sem.capture_done); 
 
 	return 0;
 }
 
-void save_frame_to_shm(int buf_index, size_t data_size, int frame_count)
+void save_frame_to_shm(int buf_index, size_t data_size)
 {
-    printf("帧 %d: 写入共享内存\n", frame_count);
+    // printf("帧 %d: 写入共享内存\n", frame_count);
 	if (!shm_ptr) 
 	{
         printf("错误：共享内存指针为空\n");
@@ -254,43 +253,35 @@ void save_frame_to_shm(int buf_index, size_t data_size, int frame_count)
 	{
         printf("     写入共享内存失败\n");
     } 
-	else 
-	{
-        printf("     已写入共享内存: %zu 字节\n", data_size);
-    }
+	// else 
+	// {
+    //     printf("     已写入共享内存: %zu 字节\n", data_size);
+    // }
 }
 
 void capture_frames()
 {
 	printf("5. 开始采集图像帧（采集5帧后停止）...\n");
 
-	for(int frame_count = 0;frame_count < 1; ++frame_count)
-	{
-		struct v4l2_buffer buf = {0};
-		struct v4l2_plane planes[VIDEO_MAX_PLANES] = {0};
+    struct v4l2_buffer buf = {0};
+    struct v4l2_plane planes[VIDEO_MAX_PLANES] = {0};
 
-		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-		buf.memory = V4L2_MEMORY_MMAP;
-		buf.length = 1;
-		buf.m.planes = planes;
-
-		if (xioctl(fd, VIDIOC_DQBUF, &buf) == -1)
-		{
+    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+    buf.memory = V4L2_MEMORY_MMAP;
+    buf.length = 1;
+    buf.m.planes = planes;
+    while(1)
+    {
+        if (xioctl(fd, VIDIOC_DQBUF, &buf) == -1)
+        {
             handle_error("VIDIOC_DQBUF");
         }
-		printf("采集到第 %d 帧！\n", frame_count + 1);
-        printf("缓冲区索引: %d\n", buf.index);
-        printf("数据长度: %d 字节\n", buf.m.planes[0].bytesused);
-        printf("序列号: %d\n", buf.sequence);
-
-		save_frame_to_file(buf.index, buf.m.planes[0].bytesused, frame_count);
-		save_frame_to_shm(buf.index, buf.m.planes[0].bytesused, frame_count);
-		
-		if (xioctl(fd, VIDIOC_QBUF, &buf) == -1)
-		{
+        save_frame_to_shm(buf.index, buf.m.planes[0].bytesused);
+        if (xioctl(fd, VIDIOC_QBUF, &buf) == -1)
+        {
             handle_error("重新QBUF");
         }
-	}
+    }
 }
 
 void v4l2_start()

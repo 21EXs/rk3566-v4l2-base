@@ -100,8 +100,8 @@ void Take_ARGB_Shm(struct shared_memory* shm)
     uint8_t* nv21_data = Get_NV21_Data(shm);
     uint8_t* argb888_data = Get_ARGB_Data(shm);
     NV21_To_BGRA(nv21_data, argb888_data, WIDTH, HEIGHT);
-    printf("已完成nv21转化为argb888格式 \n");
-    sleep(2);
+    // printf("已完成nv21转化为argb888格式 \n");
+    msleep(1000);
 }
 
 int main() 
@@ -110,9 +110,14 @@ int main()
     if (!shm_ptr) 
     {
         fprintf(stderr, "错误：共享内存映射失败，共享内存（图像处理）进程无法继续\n");
-        return;  
+        return 0;  
     }
-    // while(1)
-    Take_ARGB_Shm(shm_ptr);
+    while(1)
+    {
+        sem_wait(&shm_ptr->sem.capture_done);
+        Take_ARGB_Shm(shm_ptr);
+        sem_post(&shm_ptr->sem.convert_done);
+    }
+    return 0;  
 
 }

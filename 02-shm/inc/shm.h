@@ -33,16 +33,25 @@ struct shared_memory {
     // NV21部分
     struct {
         struct image_metadata meta;
-        sem_t semaphore;
+        // sem_t semaphore;
         uint32_t data_offset;  // 从共享内存开始的偏移
     } nv21;
     
     // ARGB部分
     struct {
         struct image_metadata meta;
-        sem_t semaphore;
+        // sem_t semaphore;
         uint32_t data_offset;
     } argb;
+
+    struct {
+        // 采集 → 转换
+        sem_t capture_done;    // 信号量A: 采集完成
+        // 转换 → 显示
+        sem_t convert_done;    // 信号量B: 转换完成
+        // 显示 → 采集
+        sem_t display_done;    // 信号量C: 显示完成
+    } sem;
     
     // 控制信息
     uint32_t ref_count;

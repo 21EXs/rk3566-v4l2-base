@@ -21,8 +21,9 @@ void Shm_Create()
     shm->argb.meta.format = 1;  // ARGB8888
     shm->argb.data_offset = sizeof(struct shared_memory) + nv21_data_size;  // ARGB数据在NV21后面
 
-    sem_init(&shm->nv21.semaphore, 1, 1);
-    sem_init(&shm->argb.semaphore, 1, 1);
+    sem_init(&shm->sem.capture_done, 1, 1);
+    sem_init(&shm->sem.convert_done, 1, 0);
+    sem_init(&shm->sem.display_done, 1, 0);
 
     printf("共享内存创建、初始化成功\n");
 }
