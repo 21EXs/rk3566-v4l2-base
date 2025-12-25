@@ -101,7 +101,7 @@ void Take_ARGB_Shm(struct shared_memory* shm)
     uint8_t* argb888_data = Get_ARGB_Data(shm);
     NV21_To_BGRA(nv21_data, argb888_data, WIDTH, HEIGHT);
     // printf("已完成nv21转化为argb888格式 \n");
-    msleep(1000);
+    usleep(10000);
 }
 
 int main() 

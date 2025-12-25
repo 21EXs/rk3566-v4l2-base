@@ -2,7 +2,7 @@
 #include "v4l2_app.h"
 
 #define DEVICE_NAME "/dev/video0"
-#define BUFFER_COUNT 4
+#define BUFFER_COUNT 8
 #define VIDEO_MAX_PLANES 8 
 
 struct buffer{
