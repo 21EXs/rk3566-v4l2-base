@@ -49,8 +49,8 @@ struct shared_memory* Drm_Shm()
 	// close(shm_fd);
 
 	printf("成功映射共享内存，大小: %zu 字节\n", total_size);
-    printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset);
-    printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset);
+    // printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset[0]_frame1);
+    // printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset[0]_frame1);
 
 	 return shm_ptr;
 }
@@ -236,16 +236,20 @@ int drm_start()
     while (1) 
     {
         sem_wait(&shm_ptr->sem.convert_done);
-        src = argb_data_ptr;
-        dst = (uint8_t*)my_dev.fb_data;
+        
+        // 直接获取BGRA数据起始地址
+        uint8_t* bgra_data = GetAvailPollAddr(BGRA_TYPE);
+        uint8_t* dst = (uint8_t*)my_dev.fb_data;
+
         for (int y = 0; y < img_height && (start_y + y) < screen_height; y++)
         {
             int src_index = y * img_width * 4;
             int dst_index = ((start_y + y) * screen_width + start_x) * 4;
             
-            // 直接拷贝一行像素（BGRA格式，4字节/像素）
-            memcpy(dst + dst_index, src + src_index, img_width * 4);
+            // 使用bgra_data作为源地址
+            memcpy(dst + dst_index, bgra_data + src_index, img_width * 4);
         }
+        
         // 显示
         if (drmModeSetCrtc(my_dev.fd, my_dev.crtc_id, my_dev.fb_id, 
                         0, 0, &my_dev.conn_id, 1, &my_dev.mode) < 0) 

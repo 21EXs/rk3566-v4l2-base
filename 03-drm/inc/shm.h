@@ -16,6 +16,10 @@
 #define WIDTH  640 
 #define HEIGHT 480
 
+#define NV21_TYPE 0
+#define BGRA_TYPE 1
+#define FRAME_NUM 3
+
 #define NV21_SIZE(WIDTH, HEIGHT) ((WIDTH) * (HEIGHT) * 3 / 2)
 #define ARGB_SIZE(WIDTH, HEIGHT) ((WIDTH) * (HEIGHT) * 4)
 
@@ -33,15 +37,13 @@ struct shared_memory {
     // NV21部分
     struct {
         struct image_metadata meta;
-        // sem_t semaphore;
-        uint32_t data_offset;  // 从共享内存开始的偏移
+        uint32_t data_offset[FRAME_NUM];  // 从共享内存开始的偏移
     } nv21;
     
     // ARGB部分
     struct {
         struct image_metadata meta;
-        // sem_t semaphore;
-        uint32_t data_offset;
+        uint32_t data_offset[FRAME_NUM];
     } argb;
 
     struct {
@@ -51,6 +53,12 @@ struct shared_memory {
         sem_t convert_done;    // 信号量B: 转换完成
         // 显示 → 采集
         sem_t display_done;    // 信号量C: 显示完成
+        //表示目前可用的捕获缓冲池数量
+        uint8_t NV21_Avail_Buf;
+        //表示目前可用的转换缓冲池数量
+        uint8_t Convert_Avail_Buf;
+        //表示目前可用的显示缓冲池数量
+        uint8_t Display_Avail_Buf;
     } sem;
     
     // 控制信息
@@ -65,21 +73,37 @@ static inline uint8_t* Get_NV21_Data(struct shared_memory* shm)
 {
     if (!shm) 
         return NULL;
-    return (uint8_t*)shm + shm->nv21.data_offset;
+    return (uint8_t*)shm + shm->nv21.data_offset[0];
 }
 
 static inline uint8_t* Get_ARGB_Data(struct shared_memory* shm) 
 {
     if (!shm) 
         return NULL;
-    return (uint8_t*)shm + shm->argb.data_offset;
+    return (uint8_t*)shm + shm->argb.data_offset[0];
 }
 
-
+static inline uint8_t* Get_Frame_Data_Offset(struct shared_memory* shm,uint8_t Frame_Type ,uint8_t Frame_ID) 
+{
+    size_t nv21_data_size = NV21_SIZE(WIDTH, HEIGHT);
+    size_t argb_data_size = ARGB_SIZE(WIDTH, HEIGHT);
+    if (!shm) 
+        return NULL;
+    
+    if(Frame_Type == NV21_TYPE)
+    {
+        return (uint8_t*)shm + sizeof(struct shared_memory) + nv21_data_size * (Frame_ID) + argb_data_size * (Frame_ID);
+    }
+    else if(Frame_Type == BGRA_TYPE)
+    {
+        return (uint8_t*)shm + sizeof(struct shared_memory) + nv21_data_size * (Frame_ID + 1) + argb_data_size * (Frame_ID );
+    }
+    else;
+}
 
 void Shm_Create();
 struct shared_memory* Shm_Open();  
-
+uint8_t* GetAvailPollAddr(uint8_t PollType);
 #endif
 
 
@@ -91,6 +115,20 @@ struct shared_memory* Shm_Open();
 | - offsets, sizes               |
 | - 状态标志                      |
 | - 信号量                      | 
++--------------------------------+ ← base_ptr + sizeof(struct metadata)
+| NV21 数据区 (460800字节)        |
+| Y分量: 640×480 = 307200字节     |
+| UV分量: 640×240 = 153600字节    |
++--------------------------------+ ← base_ptr + sizeof(metadata) + 460800
+| ARGB 数据区 (1228800字节)       |
+| 每个像素4字节: 640×480×4       |
++--------------------------------+ ← base_ptr + sizeof(struct metadata)
+| NV21 数据区 (460800字节)        |
+| Y分量: 640×480 = 307200字节     |
+| UV分量: 640×240 = 153600字节    |
++--------------------------------+ ← base_ptr + sizeof(metadata) + 460800
+| ARGB 数据区 (1228800字节)       |
+| 每个像素4字节: 640×480×4       |
 +--------------------------------+ ← base_ptr + sizeof(struct metadata)
 | NV21 数据区 (460800字节)        |
 | Y分量: 640×480 = 307200字节     |

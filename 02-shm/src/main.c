@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include "main.h"
+#include <shm.h>
 
 static struct buffer *buffers = NULL;
 static struct shared_memory *shm_ptr = NULL;
@@ -89,19 +90,25 @@ struct shared_memory* Shm_Shm()
 	// close(shm_fd);
 
 	printf("成功映射共享内存，大小: %zu 字节\n", total_size);
-    printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset);
-    printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset);
+    printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset[0]);
+    printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset[0]);
 
 	 return shm_ptr;
 }
 
 void Take_ARGB_Shm(struct shared_memory* shm)
 {
-    uint8_t* nv21_data = Get_NV21_Data(shm);
-    uint8_t* argb888_data = Get_ARGB_Data(shm);
+    sem_wait(&shm_ptr->sem.capture_done);
+    //通过可用的缓冲区去获取对应的缓冲区地址
+    uint8_t* nv21_data = GetAvailPollAddr(NV21_TYPE);
+    uint8_t* argb888_data = GetAvailPollAddr(BGRA_TYPE);
+    
+    //转化
     NV21_To_BGRA(nv21_data, argb888_data, WIDTH, HEIGHT);
+
+    sem_post(&shm->sem.display_done); 
     // printf("已完成nv21转化为argb888格式 \n");
-    usleep(10000);
+    // usleep(10000);
 }
 
 int main() 
@@ -114,9 +121,9 @@ int main()
     }
     while(1)
     {
-        sem_wait(&shm_ptr->sem.capture_done);
+        
         Take_ARGB_Shm(shm_ptr);
-        sem_post(&shm_ptr->sem.convert_done);
+
     }
     return 0;  
 

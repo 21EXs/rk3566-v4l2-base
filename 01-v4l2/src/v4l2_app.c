@@ -201,8 +201,8 @@ struct shared_memory* Frame_Shm()//获取指向加上NV21偏移量的地址的�
 	// close(shm_fd);
 
 	printf("成功映射共享内存，大小: %zu 字节\n", total_size);
-    printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset);
-    printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset);
+    printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset[0]);
+    printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset[0]);
 
 	return shm_ptr;
 }
@@ -217,25 +217,24 @@ int Write_Frame_Shm(struct shared_memory* shm, uint8_t* v4l2_buffer, size_t size
 
 	// 保护访问（获取信号量）
     sem_wait(&shm->sem.display_done);
-
-	//  获取NV21数据指针
-    uint8_t* nv21_data = Get_NV21_Data(shm);
+	
+    //  获取NV21数据指针
+    uint8_t* nv21_data = GetAvailPollAddr(NV21_TYPE);
     if (!nv21_data) 
 	{
-        printf("错误: 无法获取NV21数据指针\n");
-        sem_post(&shm->sem.display_done);
+        // sem_post(&shm->sem.display_done);
         return -1;
     }
 
-    memcpy(nv21_data, v4l2_buffer, size);
+    memcpy(nv21_data, v4l2_buffer , size);
 	// printf("     已写入共享内存: %zu 字节\n", size);
 
 	// 4. 更新元数据
     shm->nv21.meta.is_valid = 1;
 
-	// 5. 释放信号量
+	// 操作数据量代表可用buff
     sem_post(&shm->sem.capture_done); 
-
+    
 	return 0;
 }
 

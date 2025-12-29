@@ -38,8 +38,8 @@
 // 	// close(shm_fd);
 
 // 	printf("成功映射共享内存，大小: %zu 字节\n", total_size);
-//     printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset);
-//     printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset);
+//     printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset[0]_frame1);
+//     printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset[0]_frame1);
 
 // 	 return shm_ptr;
 // }
