@@ -61,59 +61,25 @@ int NV21_To_BGRA(unsigned char* input, unsigned char* output, int width, int hei
     
     return 1;
 }
-struct shared_memory* Shm_Shm()
-{
-	if (shm_ptr != NULL) 
-	{
-        return shm_ptr;
-    }
-
-	size_t nv21_data_size = NV21_SIZE(WIDTH, HEIGHT);
-    size_t argb_data_size = ARGB_SIZE(WIDTH, HEIGHT);
-	size_t total_size = sizeof(struct shared_memory) + nv21_data_size + argb_data_size;
-
-	shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
-    if (shm_fd == -1) 
-    {
-        perror("shm_open失败");
-        return NULL;
-    }
-	
-	shm_ptr = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (shm_ptr == MAP_FAILED) 
-    {
-        perror("mmap失败");
-        close(shm_fd);
-        return NULL;
-    }
-	
-	// close(shm_fd);
-
-	printf("成功映射共享内存，大小: %zu 字节\n", total_size);
-    printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset[0]);
-    printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset[0]);
-
-	 return shm_ptr;
-}
 
 void Take_ARGB_Shm(struct shared_memory* shm)
 {
     sem_wait(&shm_ptr->sem.capture_done);
-    //通过可用的缓冲区去获取对应的缓冲区地址
-    uint8_t* nv21_data = GetAvailPollAddr(NV21_TYPE);
-    uint8_t* argb888_data = GetAvailPollAddr(BGRA_TYPE);
     
+    uint8_t* nv21_data = Get_Frame_Data_Offset(shm,NV21_TYPE ,shm->sem.Convert_Avail_Buf);
+    uint8_t* bgra_data = Get_Frame_Data_Offset(shm,BGRA_TYPE ,shm->sem.Convert_Avail_Buf);
     //转化
-    NV21_To_BGRA(nv21_data, argb888_data, WIDTH, HEIGHT);
+    NV21_To_BGRA(nv21_data, bgra_data, WIDTH, HEIGHT);
+    UpdatePollID(CONVERT_TYPE);
 
-    sem_post(&shm->sem.display_done); 
+    sem_post(&shm->sem.convert_done); 
     // printf("已完成nv21转化为argb888格式 \n");
     // usleep(10000);
 }
 
 int main() 
 {
-    shm_ptr = Shm_Shm();
+    shm_ptr = Shm_Open();
     if (!shm_ptr) 
     {
         fprintf(stderr, "错误：共享内存映射失败，共享内存（图像处理）进程无法继续\n");

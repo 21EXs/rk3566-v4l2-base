@@ -179,9 +179,10 @@ void save_frame_to_file(int buf_index, size_t data_size, int frame_count)
 
 struct shared_memory* Frame_Shm()//获取指向加上NV21偏移量的地址的指针，不是获取共享内存的指针！！！
 {
-	size_t nv21_data_size = NV21_SIZE(WIDTH, HEIGHT);
+    size_t nv21_data_size = NV21_SIZE(WIDTH, HEIGHT);
     size_t argb_data_size = ARGB_SIZE(WIDTH, HEIGHT);
-	size_t total_size = sizeof(struct shared_memory) + nv21_data_size + argb_data_size;
+    /* Shm_Create 为 FRAME_NUM 帧分配了空间，这里需要映射相同的总大小 */
+    size_t total_size = sizeof(struct shared_memory) + (nv21_data_size + argb_data_size) * FRAME_NUM;
 
 	shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
     if (shm_fd == -1) 
@@ -219,7 +220,8 @@ int Write_Frame_Shm(struct shared_memory* shm, uint8_t* v4l2_buffer, size_t size
     sem_wait(&shm->sem.display_done);
 	
     //  获取NV21数据指针
-    uint8_t* nv21_data = GetAvailPollAddr(NV21_TYPE);
+    uint8_t* nv21_data = Get_Frame_Data_Offset(shm,NV21_TYPE ,shm->sem.NV21_Avail_Buf);
+    UpdatePollID(NV21_TYPE);
     if (!nv21_data) 
 	{
         // sem_post(&shm->sem.display_done);
@@ -229,8 +231,8 @@ int Write_Frame_Shm(struct shared_memory* shm, uint8_t* v4l2_buffer, size_t size
     memcpy(nv21_data, v4l2_buffer , size);
 	// printf("     已写入共享内存: %zu 字节\n", size);
 
-	// 4. 更新元数据
-    shm->nv21.meta.is_valid = 1;
+	// // 4. 更新元数据
+    // shm->nv21.meta.is_valid = 1;
 
 	// 操作数据量代表可用buff
     sem_post(&shm->sem.capture_done); 
@@ -287,7 +289,7 @@ void v4l2_start()
 {
     printf("=== V4L2 多平面缓冲区设置 ===\n");
 	
-	shm_ptr = Frame_Shm();
+	shm_ptr = Shm_Open();
     if (!shm_ptr) 
     {
         fprintf(stderr, "错误：共享内存映射失败，v4l2进程无法继续\n");
@@ -295,7 +297,8 @@ void v4l2_start()
     }
 
 	printf("打开设备 %s...\n", DEVICE_NAME);
-	fd = open(DEVICE_NAME,O_RDWR | O_NONBLOCK);
+	// fd = open(DEVICE_NAME,O_RDWR | O_NONBLOCK);
+    fd = open(DEVICE_NAME,O_RDWR);
 	if(fd == -1)
 	{
 		handle_error("打开设备");

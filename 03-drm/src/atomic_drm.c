@@ -20,41 +20,6 @@ int create_test_pattern(uint32_t *buffer, int width, int height)
   }
 }
 
-struct shared_memory* Drm_Shm()
-{
-	if (shm_ptr != NULL) 
-	{
-        return shm_ptr;
-    }
-
-	size_t nv21_data_size = NV21_SIZE(WIDTH, HEIGHT);
-    size_t argb_data_size = ARGB_SIZE(WIDTH, HEIGHT);
-	size_t total_size = sizeof(struct shared_memory) + nv21_data_size + argb_data_size;
-
-	shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
-    if (shm_fd == -1) 
-    {
-        perror("shm_open失败");
-        return NULL;
-    }
-	
-	shm_ptr = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (shm_ptr == MAP_FAILED) 
-    {
-        perror("mmap失败");
-        close(shm_fd);
-        return NULL;
-    }
-	
-	// close(shm_fd);
-
-	printf("成功映射共享内存，大小: %zu 字节\n", total_size);
-    // printf("NV21数据偏移: %u\n", shm_ptr->nv21.data_offset[0]_frame1);
-    // printf("ARGB数据偏移: %u\n", shm_ptr->argb.data_offset[0]_frame1);
-
-	 return shm_ptr;
-}
-
 int init_drm_device(struct drm_device *dev)
 {
     dev->fd = drmOpen("rockchip", NULL);
@@ -181,6 +146,8 @@ int drm_start()
     system("killall weston 2>/dev/null");
     sleep(1);
     
+    
+
     if (init_drm_device(&my_dev) < 0) 
     {
         printf("DRM设备初始化失败\n");
@@ -191,14 +158,13 @@ int drm_start()
     int screen_width = my_dev.mode.hdisplay;
     int screen_height = my_dev.mode.vdisplay;
     
-    // 从共享内存获取图像尺寸
-    struct shared_memory* shm = Drm_Shm();
-    if (shm == NULL) 
+
+    shm_ptr = Shm_Open();
+    if (shm_ptr == NULL) 
     {
         fprintf(stderr, "无法获取共享内存\n");
         return -1;
     }
-    
     // 从共享内存的元数据中获取图像尺寸
     int img_width = WIDTH;
     int img_height = HEIGHT;
@@ -206,14 +172,6 @@ int drm_start()
     if (create_framebuffer(&my_dev, screen_width, screen_height) < 0) 
     {
         printf("帧缓冲创建失败\n");
-        return -1;
-    }
-
-    // 获取ARGB数据的指针
-    uint8_t* argb_data_ptr = Get_ARGB_Data(shm);
-    
-    if (argb_data_ptr == NULL) {
-        fprintf(stderr, "无法获取ARGB数据指针\n");
         return -1;
     }
     
@@ -235,18 +193,20 @@ int drm_start()
 
     while (1) 
     {
+        // printf("进入循环\n");
         sem_wait(&shm_ptr->sem.convert_done);
         
         // 直接获取BGRA数据起始地址
-        uint8_t* bgra_data = GetAvailPollAddr(BGRA_TYPE);
-        uint8_t* dst = (uint8_t*)my_dev.fb_data;
+        // uint8_t* bgra_data = GetAvailPollAddr(BGRA_TYPE);
+        uint8_t* bgra_data = Get_Frame_Data_Offset(shm_ptr,BGRA_TYPE ,shm_ptr->sem.BGRA_Avail_Buf);
+
+        dst = (uint8_t*)my_dev.fb_data;
 
         for (int y = 0; y < img_height && (start_y + y) < screen_height; y++)
         {
             int src_index = y * img_width * 4;
             int dst_index = ((start_y + y) * screen_width + start_x) * 4;
-            
-            // 使用bgra_data作为源地址
+
             memcpy(dst + dst_index, bgra_data + src_index, img_width * 4);
         }
         
@@ -257,6 +217,7 @@ int drm_start()
             printf("显示启动失败: %s\n", strerror(errno));
             return -1;
         }
+        UpdatePollID(BGRA_TYPE);
         sem_post(&shm_ptr->sem.display_done);
     }
     
