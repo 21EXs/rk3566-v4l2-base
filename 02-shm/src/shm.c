@@ -122,27 +122,25 @@ void UpdatePollID(uint8_t PollType)
     struct shared_memory *shm_ptr = g_shm_ptr;
     if (!shm_ptr) {
         printf("错误: 无法获取共享内存指针\n");
-        return NULL;
+        return;
     }
-    
-    uint8_t* result = NULL;
-    
+
     if (PollType == NV21_TYPE) 
     {
         g_shm_ptr->sem.NV21_Avail_Buf++;
-        if(g_shm_ptr->sem.NV21_Avail_Buf > 2)
+        if (g_shm_ptr->sem.NV21_Avail_Buf >= FRAME_NUM)
             g_shm_ptr->sem.NV21_Avail_Buf = 0;
     } 
     else if (PollType == BGRA_TYPE) 
     {
         g_shm_ptr->sem.BGRA_Avail_Buf++;
-        if(g_shm_ptr->sem.BGRA_Avail_Buf > 2)
+        if (g_shm_ptr->sem.BGRA_Avail_Buf >= FRAME_NUM)
             g_shm_ptr->sem.BGRA_Avail_Buf = 0;
     } 
-    else if(CONVERT_TYPE)
+    else if (PollType == CONVERT_TYPE)
     {
         g_shm_ptr->sem.Convert_Avail_Buf++;
-        if(g_shm_ptr->sem.Convert_Avail_Buf > 2)
+        if (g_shm_ptr->sem.Convert_Avail_Buf >= FRAME_NUM)
             g_shm_ptr->sem.Convert_Avail_Buf = 0;
     }
     else 
