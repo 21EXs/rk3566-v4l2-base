@@ -6,11 +6,16 @@
 #include <sys/mman.h>
 #include "main.h"
 #include <shm.h>
+#include <pthread.h>
+#include "MPP_Wrapper.h"
+
+void* thread1_function(void* arg);
 
 static struct buffer *buffers = NULL;
 static struct shared_memory *shm_ptr = NULL;
 static int fd = -1;
 int shm_fd;
+int g_fd_h264; 
 
 int NV21_To_BGRA(unsigned char* input, unsigned char* output, int width, int height) 
 {
@@ -79,18 +84,53 @@ void Take_ARGB_Shm(struct shared_memory* shm)
 
 int main() 
 {
+    pid_t pid = fork();
+
     shm_ptr = Shm_Open();
     if (!shm_ptr) 
     {
         fprintf(stderr, "错误：共享内存映射失败，共享内存（图像处理）进程无法继续\n");
         return 0;  
     }
-    while(1)
-    {
-        
-        Take_ARGB_Shm(shm_ptr);
 
+    g_fd_h264 = open("out.h264", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (g_fd_h264 < 0) 
+    {
+        perror("open out.h264");
+        return -1;
+    }
+
+    if (pid == 0) 
+    {
+        printf("=== child enter, will alloc phy buf ===\n");
+        size_t frame_size = WIDTH * HEIGHT * 3 / 2;
+        MppBuffer phy_buf = NULL;
+        mpp_buffer_get(NULL, &phy_buf, frame_size);   // 物理连续
+        uint8_t *phy_ptr  = (uint8_t *)mpp_buffer_get_ptr(phy_buf);
+
+        /* ===== 2. 把共享内存第一帧拷进去 ===== */
+        uint8_t *nv21_data = Get_Frame_Data_Offset(shm_ptr, NV21_TYPE, 0);
+        memcpy(phy_ptr, nv21_data, frame_size);
+
+        /* ===== 3. 用这块“物理内存”去编码 ===== */
+        MPP_Enc_Wrapper(phy_ptr, frame_size);         // 传入指针即可
+
+        /* ===== 4. 用完释放 ===== */
+        mpp_buffer_put(phy_buf);
+        while(1) 
+        {
+            printf("child done, check /mnt/out.h264\n");
+            sleep(1);
+        }
+    }
+    else if (pid > 0)
+    {
+        while(1)
+        {
+            Take_ARGB_Shm(shm_ptr);
+        }
     }
     return 0;  
-
 }
+
+
