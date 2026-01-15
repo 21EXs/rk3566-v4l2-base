@@ -12,7 +12,7 @@
 void* thread1_function(void* arg);
 
 static struct buffer *buffers = NULL;
-static struct shared_memory *shm_ptr = NULL;
+struct shared_memory *shm_ptr = NULL;
 static int fd = -1;
 int shm_fd;
 int g_fd_h264; 
@@ -102,25 +102,14 @@ int main()
 
     if (pid == 0) 
     {
+        MPP_Enc_Wrapper_Init(WIDTH*HEIGHT*3/2);
         printf("=== child enter, will alloc phy buf ===\n");
-        size_t frame_size = WIDTH * HEIGHT * 3 / 2;
-        MppBuffer phy_buf = NULL;
-        mpp_buffer_get(NULL, &phy_buf, frame_size);   // 物理连续
-        uint8_t *phy_ptr  = (uint8_t *)mpp_buffer_get_ptr(phy_buf);
-
-        /* ===== 2. 把共享内存第一帧拷进去 ===== */
-        uint8_t *nv21_data = Get_Frame_Data_Offset(shm_ptr, NV21_TYPE, 0);
-        memcpy(phy_ptr, nv21_data, frame_size);
-
-        /* ===== 3. 用这块“物理内存”去编码 ===== */
-        MPP_Enc_Wrapper(phy_ptr, frame_size);         // 传入指针即可
-
-        /* ===== 4. 用完释放 ===== */
-        mpp_buffer_put(phy_buf);
+        // MPP_Enc_Wrapper_Loop(WIDTH*HEIGHT*3/2);
         while(1) 
         {
-            printf("child done, check /mnt/out.h264\n");
-            sleep(1);
+            MPP_Enc_Wrapper_Loop(WIDTH*HEIGHT*3/2);
+            // printf("child done, check /mnt/out.h264\n");
+            sleep(2);
         }
     }
     else if (pid > 0)

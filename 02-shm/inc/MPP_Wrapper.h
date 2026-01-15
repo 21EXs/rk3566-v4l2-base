@@ -85,4 +85,5 @@ typedef struct MppOptInfo_t {
 
 typedef void* MppOpt;
 
-void MPP_Enc_Wrapper(uint8_t *nv21_data_ptr, size_t nv21_size);
+void MPP_Enc_Wrapper_Init(size_t nv21_size);
+void MPP_Enc_Wrapper_Loop(size_t nv21_size);
