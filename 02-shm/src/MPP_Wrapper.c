@@ -31,13 +31,30 @@ static MppBuffer g_pkt_buf = NULL;
 extern int g_fd_h264; 
 extern struct shared_memory *shm_ptr;
 
-static uint64_t pts_counter = 0;
-
-static uint64_t get_current_time_us(void)
+int64_t get_relative_pts(int timebase_num, int timebase_den) 
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+    static struct timespec start_ts = {0, 0};
+    static int initialized = 0;
+    struct timespec now_ts;
+    
+    clock_gettime(CLOCK_MONOTONIC, &now_ts);
+    
+    if (!initialized) 
+    {
+        start_ts = now_ts;
+        initialized = 1;
+        return 0;
+    }
+    
+    // 计算经过的纳秒
+    uint64_t elapsed_ns = (uint64_t)(now_ts.tv_sec - start_ts.tv_sec) * 1000000000ULL
+                         + (now_ts.tv_nsec - start_ts.tv_nsec);
+    
+    // 转换为时基单位
+    // elapsed_ns * timebase_den / (1e9 * timebase_num)
+    int64_t pts = (int64_t)(elapsed_ns * timebase_den) / (1000000000LL * timebase_num);
+    
+    return pts;
 }
 
 
@@ -46,22 +63,22 @@ int encoder_cfg_nv21(void)
 {
     if (!g_ctx || !g_mpi)
         return -1;
-
+    
     MppEncCfg cfg = NULL;
-    mpp_enc_cfg_init(&cfg);                       // 1. 分配默认配置
-
+    mpp_enc_cfg_init(&cfg);
+    
     mpp_enc_cfg_set_s32(cfg, "prep:width",       WIDTH);
     mpp_enc_cfg_set_s32(cfg, "prep:height",      HEIGHT);
-    mpp_enc_cfg_set_s32(cfg, "prep:hor_stride",  WIDTH);//内存对齐
-    mpp_enc_cfg_set_s32(cfg, "prep:ver_stride",  HEIGHT);//内存对齐
+    mpp_enc_cfg_set_s32(cfg, "prep:hor_stride",  WIDTH);
+    mpp_enc_cfg_set_s32(cfg, "prep:ver_stride",  HEIGHT);
     mpp_enc_cfg_set_s32(cfg, "prep:format",      MPP_FMT_YUV420SP_VU);
-    mpp_enc_cfg_set_s32(cfg, "rc:mode",          MPP_ENC_RC_MODE_CBR);// 恒定码率模式
-    mpp_enc_cfg_set_s32(cfg, "rc:bps",           WIDTH * HEIGHT * 7.5);// 目标码率
-    mpp_enc_cfg_set_s32(cfg, "rc:fps",           30);
-    mpp_enc_cfg_set_s32(cfg, "rc:gop ",          30);
-
+    mpp_enc_cfg_set_s32(cfg, "rc:mode",          MPP_ENC_RC_MODE_CBR);
+    mpp_enc_cfg_set_s32(cfg, "rc:bps",           WIDTH * HEIGHT * 7.5);
+    mpp_enc_cfg_set_s32(cfg, "rc:fps",           30);  // 改为30fps
+    mpp_enc_cfg_set_s32(cfg, "rc:gop",           30);  // 改为30
+    
     MPP_RET ret = g_mpi->control(g_ctx, MPP_ENC_SET_CFG, cfg);
-    mpp_enc_cfg_deinit(cfg);                      // 2. 立即释放
+    mpp_enc_cfg_deinit(cfg);
     return (ret == MPP_OK) ? 0 : -1;
 }
 
@@ -69,36 +86,45 @@ int MPP_Encode_One_Frame(void)
 {
     MppFrame  frame  = NULL;
     MppPacket packet = NULL;
-
+    
+    static int64_t frame_count = 0;  // 帧计数器
+    static int first_call = 1;
+    static int64_t start_time_us = 0;
+    static int64_t first_pts = 0;
+    
     /* 1. 把已注册好的输入 buffer 包成 MppFrame */
     mpp_frame_init(&frame);
     mpp_frame_set_width(frame, WIDTH);
     mpp_frame_set_height(frame, HEIGHT);
     mpp_frame_set_fmt(frame, MPP_FMT_YUV420SP_VU);
-    mpp_frame_set_buffer(frame, g_frm_buf);   // 零拷贝
+    mpp_frame_set_buffer(frame, g_frm_buf);
     mpp_frame_set_hor_stride(frame, WIDTH);
     mpp_frame_set_ver_stride(frame, HEIGHT);
-    mpp_frame_set_pts(frame, pts_counter);
-    pts_counter += 33333;  // 1000000微秒/30帧 ≈ 33333
-  
-
+    
+    // 计算PTS（基于30fps）
+    // 90kHz时基下，30fps时每帧间隔是 90000/30 = 3000
+    int64_t pts = frame_count * 3000;
+    mpp_frame_set_pts(frame, pts);
+    
+    frame_count++;
+    
     /* 2. 把输出 buffer 包成 MppPacket */
     mpp_packet_init(&packet, NULL, 0);
     mpp_packet_set_buffer(packet, g_pkt_buf);
-
+    
     /* 3. 送帧-取包 */
     MPP_RET ret;
     ret = g_mpi->encode_put_frame(g_ctx, frame);
     if (ret != MPP_OK) goto DONE;
-
+    
     ret = g_mpi->encode_get_packet(g_ctx, &packet);
     if (ret != MPP_OK) goto DONE;
-
+    
     /* 4. 写文件 */
     void   *ptr = mpp_packet_get_pos(packet);
     size_t  len = mpp_packet_get_length(packet);
-    write(g_fd_h264, ptr, len);   // g_fd_h264 提前 open("out.h264",...)
-
+    write(g_fd_h264, ptr, len);
+    
 DONE:
     mpp_frame_deinit(&frame);
     mpp_packet_deinit(&packet);
@@ -140,12 +166,13 @@ void MPP_Enc_Wrapper_Init(size_t nv21_size)
 void MPP_Enc_Wrapper_Loop(size_t nv21_size)
 {
     static uint8_t Encode_Avail_Buf = 0;
+    Encode_Avail_Buf = shm_ptr->sem.BGRA_Avail_Buf;
     // printf("Encode_Avail_Buf:%d\n",Encode_Avail_Buf);
     uint8_t* nv21_data_ptr = Get_Frame_Data_Offset(shm_ptr,NV21_TYPE ,Encode_Avail_Buf);
-    if(shm_ptr->sem.BGRA_Avail_Buf  == 0)
-        Encode_Avail_Buf = 2;
-    else 
-        Encode_Avail_Buf = shm_ptr->sem.BGRA_Avail_Buf -1;
+    // if(shm_ptr->sem.BGRA_Avail_Buf  == 0)
+    //     Encode_Avail_Buf = 2;
+    // else 
+    //     Encode_Avail_Buf = shm_ptr->sem.BGRA_Avail_Buf -1;
 
     uint8_t *dst = (uint8_t *)mpp_buffer_get_ptr(g_frm_buf);
     memcpy(dst, nv21_data_ptr, nv21_size);  // 这里只是拷贝了数据

@@ -108,8 +108,7 @@ int main()
         while(1) 
         {
             MPP_Enc_Wrapper_Loop(WIDTH*HEIGHT*3/2);
-            // printf("child done, check /mnt/out.h264\n");
-            sleep(2);
+            usleep(33333); 
         }
     }
     else if (pid > 0)
