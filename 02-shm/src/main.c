@@ -93,22 +93,32 @@ int main()
         return 0;  
     }
 
-    g_fd_h264 = open("out.h264", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (g_fd_h264 < 0) 
-    {
-        perror("open out.h264");
-        return -1;
-    }
-
     if (pid == 0) 
     {
-        MPP_Enc_Wrapper_Init(WIDTH*HEIGHT*3/2);
-        printf("=== child enter, will alloc phy buf ===\n");
-        // MPP_Enc_Wrapper_Loop(WIDTH*HEIGHT*3/2);
+        int frame_count = 0;
+        time_t last_print_time = time(NULL);
+        H264Encoder *enc = H264Encoder_Init(WIDTH, HEIGHT, "/mnt/output.h264");
         while(1) 
         {
-            MPP_Enc_Wrapper_Loop(WIDTH*HEIGHT*3/2);
-            usleep(33333); 
+            uint8_t* nv21_data = Get_Frame_Data_Offset(shm_ptr,NV21_TYPE ,shm_ptr->sem.BGRA_Avail_Buf);
+            int ret = H264Encoder_EncodeFrame(enc, nv21_data);
+            if (ret != 0) 
+            {
+                printf("编码失败: %d\n", ret);
+            }
+
+            frame_count++;
+            
+            // 每秒打印一次进度
+            time_t now = time(NULL);
+            if (now - last_print_time >= 1) 
+            {
+                printf("已编码 %d 帧\n", frame_count);
+                last_print_time = now;
+            }
+            
+            // 控制帧率：30fps ≈ 33.3ms
+            usleep(33333);
         }
     }
     else if (pid > 0)

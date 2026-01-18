@@ -143,6 +143,42 @@ void queue_all_buffers()
 	 printf(" 所有缓冲区已加入采集队列\n");
 }
 
+void set_frame_rate(int fps)
+{
+    printf("设置帧率: %d FPS\n", fps);
+    
+    struct v4l2_streamparm parm = {0};
+    parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+    
+    // 先获取当前参数
+    if (xioctl(fd, VIDIOC_G_PARM, &parm) == -1) {
+        fprintf(stderr, "获取流参数失败\n");
+        return;
+    }
+    
+    // 检查设备是否支持帧率设置
+    if (!(parm.parm.capture.capability & V4L2_CAP_TIMEPERFRAME)) {
+        fprintf(stderr, "设备不支持帧率设置\n");
+        return;
+    }
+    
+    // 设置帧率
+    // 对于60fps：numerator=1, denominator=60
+    parm.parm.capture.timeperframe.numerator = 1;
+    parm.parm.capture.timeperframe.denominator = fps;
+    
+    if (xioctl(fd, VIDIOC_S_PARM, &parm) == -1) {
+        fprintf(stderr, "设置帧率失败\n");
+        return;
+    }
+    
+    printf("帧率设置成功: %d/%d = %.2f fps\n", 
+           parm.parm.capture.timeperframe.numerator,
+           parm.parm.capture.timeperframe.denominator,
+           (float)parm.parm.capture.timeperframe.denominator / 
+           parm.parm.capture.timeperframe.numerator);
+}
+
 void start_streaming()
 {
 	printf("4. 启动视频流...\n");
@@ -315,6 +351,8 @@ void v4l2_start()
     }
 
 	printf("格式设置成功: 640x480 NV21\n");
+
+    set_frame_rate(60);
 
 	request_buffers();
 

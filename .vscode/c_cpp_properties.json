@@ -1,0 +1,25 @@
+
+
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                // 添加MPP包含路径
+                "/home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/external/mpp/build/linux/aarch64/install/include",
+                // 如果需要，也可以添加上一级
+                "/home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/external/mpp/build/linux/aarch64/install/include/rockchip"
+            ],
+            "defines": [
+                "RKPLATFORM",
+                "HAVE_MPP"
+            ],
+            "compilerPath": "/usr/bin/aarch64-linux-gnu-gcc",  // 交叉编译工具链
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-arm64"
+        }
+    ],
+    "version": 4
+}
