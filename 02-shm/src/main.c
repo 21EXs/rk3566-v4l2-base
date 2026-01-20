@@ -95,30 +95,37 @@ int main()
 
     if (pid == 0) 
     {
+        static uint8_t EncodeFlag = 0;
         int frame_count = 0;
         time_t last_print_time = time(NULL);
         H264Encoder *enc = H264Encoder_Init(WIDTH, HEIGHT, "/mnt/output.h264");
         while(1) 
         {
-            uint8_t* nv21_data = Get_Frame_Data_Offset(shm_ptr,NV21_TYPE ,shm_ptr->sem.BGRA_Avail_Buf);
-            int ret = H264Encoder_EncodeFrame(enc, nv21_data);
-            if (ret != 0) 
+            if(EncodeFlag != shm_ptr->sem.BGRA_Avail_Buf)
             {
-                printf("编码失败: %d\n", ret);
-            }
+                uint8_t* nv21_data = Get_Frame_Data_Offset(shm_ptr,NV21_TYPE ,shm_ptr->sem.BGRA_Avail_Buf);
+                int ret = H264Encoder_EncodeFrame(enc, nv21_data);
+                if (ret != 0) 
+                {
+                    printf("编码失败: %d\n", ret);
+                }
 
-            frame_count++;
-            
-            // 每秒打印一次进度
-            time_t now = time(NULL);
-            if (now - last_print_time >= 1) 
-            {
-                printf("已编码 %d 帧\n", frame_count);
-                last_print_time = now;
+                frame_count++;
+                
+                // // 每3秒打印一次进度
+                // time_t now = time(NULL);
+                // if (now - last_print_time >= 3) 
+                // {
+                //     printf("已编码 %d 帧\n", frame_count);
+                //     last_print_time = now;
+                // }
+                
+                EncodeFlag = shm_ptr->sem.BGRA_Avail_Buf;
             }
-            
-            // 控制帧率：30fps ≈ 33.3ms
-            usleep(33333);
+            else
+            {
+                usleep(10);
+            }
         }
     }
     else if (pid > 0)

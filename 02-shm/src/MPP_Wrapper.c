@@ -57,7 +57,8 @@ H264Encoder* H264Encoder_Init(int width, int height, const char* output_path)
 
     enc->fps = 30;//帧率
     enc->gop = 30;//关键帧间隔
-    enc->bitrate = width * height * 7.5;//码率
+    // enc->bitrate = width * height * 7.5;//码率
+    enc->bitrate =300000;//码率
 
     enc->frame_count = 0;//已编码帧数
     enc->start_time_ns = 0;//开始时间
