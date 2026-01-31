@@ -54,5 +54,6 @@ typedef struct {
 H264Encoder* H264Encoder_Init(int width, int height, const char* output_path);
 int H264Encoder_EncodeFrame(H264Encoder *enc, uint8_t *nv21_data);
 void H264Encoder_Destroy(H264Encoder *enc);
-
+int Push_H264_Stream(const char* rtmp_url, const unsigned char* h264_data,int data_size, int is_keyframe, unsigned int timestamp);
+void Push_Init() ;
 #endif

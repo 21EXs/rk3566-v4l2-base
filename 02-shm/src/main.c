@@ -99,6 +99,7 @@ int main()
         int frame_count = 0;
         time_t last_print_time = time(NULL);
         H264Encoder *enc = H264Encoder_Init(WIDTH, HEIGHT, "/mnt/output.h264");
+        // Push_Init();
         while(1) 
         {
             if(EncodeFlag != shm_ptr->sem.BGRA_Avail_Buf)

@@ -18,6 +18,20 @@ MPP_INCLUDE_DIR  := $(MPP_INSTALL_DIR)/include
 MPP_LIB_DIR      := $(MPP_INSTALL_DIR)/lib
 
 # -------------------------------
+# FFmpeg 路径
+# -------------------------------
+FFMPEG_PATH      := /home/xs/develop/TaiShanPie/ffmpeg-rockchip/ffmpeg_rk_build
+FFMPEG_INCLUDE   := $(FFMPEG_PATH)/include
+FFMPEG_LIB       := $(FFMPEG_PATH)/lib
+
+# -------------------------------
+# x264 路径
+# -------------------------------
+X264_PATH        := /home/xs/develop/TaiShanPie/x264/x264build
+X264_INCLUDE     := $(X264_PATH)/include
+X264_LIB         := $(X264_PATH)/lib
+
+# -------------------------------
 # 系统路径配置
 # -------------------------------
 SYSROOT_PATH     := $(SDK_PATH)/buildroot/output/rockchip_rk3566/host/aarch64-buildroot-linux-gnu/sysroot
@@ -47,6 +61,8 @@ CFLAGS          += -I$(SYSROOT_INCLUDE)    # 系统头文件
 CFLAGS          += -I$(INCLUDE_DIR)        # 项目头文件
 CFLAGS          += -I$(MPP_INCLUDE_DIR)    # MPP 头文件
 CFLAGS          += -I$(MPP_INCLUDE_DIR)/rockchip  # Rockchip 特定头文件
+CFLAGS          += -I$(FFMPEG_INCLUDE)     # FFmpeg 头文件
+CFLAGS          += -I$(X264_INCLUDE)       # x264 头文件
 CFLAGS          += --sysroot=$(SYSROOT_PATH)  # 系统根目录
 
 # 添加必要的预处理器定义
@@ -60,7 +76,14 @@ CFLAGS          += -D_FILE_OFFSET_BITS=64
 # -------------------------------
 LDFLAGS         := -L$(SYSROOT_LIB)        # 系统库路径
 LDFLAGS         += -L$(MPP_LIB_DIR)        # MPP 库路径
+LDFLAGS         += -L$(FFMPEG_LIB)         # FFmpeg 库路径
+LDFLAGS         += -L$(X264_LIB)           # x264 库路径
 LDFLAGS         += --sysroot=$(SYSROOT_PATH)  # 系统根目录
+
+# 添加运行时库搜索路径（非常重要！）
+LDFLAGS         += -Wl,-rpath,$(FFMPEG_LIB)
+LDFLAGS         += -Wl,-rpath,$(X264_LIB)
+LDFLAGS         += -Wl,-rpath,$(MPP_LIB_DIR)
 
 # -------------------------------
 # 链接库
@@ -68,14 +91,27 @@ LDFLAGS         += --sysroot=$(SYSROOT_PATH)  # 系统根目录
 LIBS            := -lpthread -lrt
 LIBS            += -lrockchip_mpp          # 主 MPP 库
 
+# FFmpeg 库（按依赖顺序）
+LIBS            += -lavformat
+LIBS            += -lavcodec
+LIBS            += -lavutil
+LIBS            += -lavdevice
+LIBS            += -lavfilter
+LIBS            += -lswscale
+LIBS            += -lswresample
+LIBS            += -lpostproc
+
+# x264 库
+LIBS            += -lx264
+
 # ============================================================================
 # 构建目标
 # ============================================================================
 
-.PHONY: all clean distclean help check-env check-project info
+.PHONY: all clean distclean help check-env check-project check-ffmpeg info
 
 # 默认目标
-all: check-env $(BUILD_DIR) $(TARGET)
+all: check-env check-ffmpeg $(BUILD_DIR) $(TARGET)
 
 # 创建构建目录
 $(BUILD_DIR):
@@ -132,7 +168,44 @@ check-env:
 	else \
 		echo "警告: 未找到 MPP 库文件"; \
 	fi
+
+# 检查FFmpeg和x264
+check-ffmpeg:
+	@echo "----------------------------------------"
+	@echo -n "✓ 检查 FFmpeg 头文件... "
+	@if [ -d "$(FFMPEG_INCLUDE)" ]; then \
+		echo "找到: $(FFMPEG_INCLUDE)"; \
+	else \
+		echo "失败: $(FFMPEG_INCLUDE)"; \
+		exit 1; \
+	fi
 	
+	@echo -n "✓ 检查 FFmpeg 库文件... "
+	@if [ -d "$(FFMPEG_LIB)" ]; then \
+		echo "找到: $(FFMPEG_LIB)"; \
+		@echo "  FFmpeg 库列表:"; \
+		@ls -1 $(FFMPEG_LIB)/libav*.so $(FFMPEG_LIB)/libpostproc*.so $(FFMPEG_LIB)/libsw*.so 2>/dev/null | xargs -I {} basename {} || true; \
+	else \
+		echo "失败: $(FFMPEG_LIB)"; \
+		exit 1; \
+	fi
+	
+	@echo -n "✓ 检查 x264 头文件... "
+	@if [ -d "$(X264_INCLUDE)" ]; then \
+		echo "找到: $(X264_INCLUDE)"; \
+	else \
+		echo "失败: $(X264_INCLUDE)"; \
+		exit 1; \
+	fi
+	
+	@echo -n "✓ 检查 x264 库文件... "
+	@if [ -f "$(X264_LIB)/libx264.so" -o -f "$(X264_LIB)/libx264.so.*" ]; then \
+		echo "找到: $(X264_LIB)"; \
+		@ls -1 $(X264_LIB)/libx264* 2>/dev/null | xargs -I {} basename {} || true; \
+	else \
+		echo "失败: $(X264_LIB)"; \
+		exit 1; \
+	fi
 	@echo "----------------------------------------"
 
 # 检查项目结构
@@ -174,6 +247,10 @@ info:
 	@echo "系统根目录:  $(SYSROOT_PATH)"
 	@echo "MPP 头文件目录: $(MPP_INCLUDE_DIR)"
 	@echo "MPP 库目录:   $(MPP_LIB_DIR)"
+	@echo "FFmpeg 头文件目录: $(FFMPEG_INCLUDE)"
+	@echo "FFmpeg 库目录: $(FFMPEG_LIB)"
+	@echo "x264 头文件目录: $(X264_INCLUDE)"
+	@echo "x264 库目录:   $(X264_LIB)"
 	@echo ""
 	@echo "编译选项:"
 	@echo "  CFLAGS: $(CFLAGS)"
@@ -202,6 +279,7 @@ help:
 	@echo "make clean        - 清理构建文件"
 	@echo "make distclean    - 完全清理"
 	@echo "make check-env    - 检查编译环境"
+	@echo "make check-ffmpeg - 检查FFmpeg和x264"
 	@echo "make check-project - 检查项目结构"
 	@echo "make info         - 显示详细配置"
 	@echo "make help         - 显示此帮助"

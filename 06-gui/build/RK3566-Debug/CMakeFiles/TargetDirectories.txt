@@ -1,0 +1,8 @@
+/home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/CMakeFiles/06-gui.dir
+/home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/CMakeFiles/edit_cache.dir
+/home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/CMakeFiles/rebuild_cache.dir
+/home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/CMakeFiles/list_install_components.dir
+/home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/CMakeFiles/install.dir
+/home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/CMakeFiles/install/local.dir
+/home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/CMakeFiles/install/strip.dir
+/home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/CMakeFiles/06-gui_autogen.dir
