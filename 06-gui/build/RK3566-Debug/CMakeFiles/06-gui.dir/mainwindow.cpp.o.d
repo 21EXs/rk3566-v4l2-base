@@ -268,28 +268,46 @@ CMakeFiles/06-gui.dir/mainwindow.cpp.o: \
  /opt/qt5.12.10-arm/include/QtGui/qkeysequence.h \
  /opt/qt5.12.10-arm/include/QtWidgets/qtabwidget.h \
  /opt/qt5.12.10-arm/include/QtGui/qicon.h \
- /home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/06-gui_autogen/include/./ui_mainwindow.h \
- /opt/qt5.12.10-arm/include/QtCore/QVariant \
- /opt/qt5.12.10-arm/include/QtCore/qvariant.h \
+ /home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/Socket_Client.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/socket.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/uio.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/uio.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/socket.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/socket_type.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/sockaddr.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/asm/socket.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/asm-generic/socket.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/asm/sockios.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/asm-generic/sockios.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/un.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/unistd.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/posix_opt.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/environments.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/confname.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/getopt.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/include/c++/6.3.1/cstring \
+ /opt/qt5.12.10-arm/include/QtWidgets/QVBoxLayout \
+ /opt/qt5.12.10-arm/include/QtWidgets/qboxlayout.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/qlayout.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/qlayoutitem.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/qboxlayout.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/qgridlayout.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/QHBoxLayout \
+ /opt/qt5.12.10-arm/include/QtWidgets/QFrame \
+ /opt/qt5.12.10-arm/include/QtWidgets/qframe.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/QPushButton \
+ /opt/qt5.12.10-arm/include/QtWidgets/qpushbutton.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/qabstractbutton.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/QSpacerItem \
+ /opt/qt5.12.10-arm/include/QtWidgets/qlayoutitem.h \
+ /opt/qt5.12.10-arm/include/QtCore/QDebug \
+ /opt/qt5.12.10-arm/include/QtCore/qdebug.h \
  /opt/qt5.12.10-arm/include/QtCore/qmap.h \
  /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/include/c++/6.3.1/functional \
  /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/include/c++/6.3.1/typeinfo \
- /opt/qt5.12.10-arm/include/QtWidgets/QApplication \
- /opt/qt5.12.10-arm/include/QtWidgets/qapplication.h \
- /opt/qt5.12.10-arm/include/QtCore/qcoreapplication.h \
- /opt/qt5.12.10-arm/include/QtCore/qcoreevent.h \
- /opt/qt5.12.10-arm/include/QtCore/qeventloop.h \
- /opt/qt5.12.10-arm/include/QtGui/qguiapplication.h \
- /opt/qt5.12.10-arm/include/QtGui/qinputmethod.h \
+ /opt/qt5.12.10-arm/include/QtCore/qtextstream.h \
  /opt/qt5.12.10-arm/include/QtCore/qlocale.h \
  /opt/qt5.12.10-arm/include/QtCore/qvariant.h \
- /opt/qt5.12.10-arm/include/QtWidgets/QMainWindow \
- /opt/qt5.12.10-arm/include/QtWidgets/QMenuBar \
- /opt/qt5.12.10-arm/include/QtWidgets/qmenubar.h \
- /opt/qt5.12.10-arm/include/QtWidgets/qmenu.h \
- /opt/qt5.12.10-arm/include/QtWidgets/qaction.h \
- /opt/qt5.12.10-arm/include/QtWidgets/qactiongroup.h \
- /opt/qt5.12.10-arm/include/QtWidgets/QStatusBar \
- /opt/qt5.12.10-arm/include/QtWidgets/qstatusbar.h \
- /opt/qt5.12.10-arm/include/QtWidgets/QWidget \
- /opt/qt5.12.10-arm/include/QtWidgets/qwidget.h
+ /opt/qt5.12.10-arm/include/QtCore/qset.h \
+ /opt/qt5.12.10-arm/include/QtCore/qcontiguouscache.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/include/c++/6.3.1/iostream

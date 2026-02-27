@@ -1,0 +1,70 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-556e732eceec4a3abe03.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "06-gui",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "06-gui::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-06-gui-Debug-a5c54a2c59db09e8a29d.json",
+					"name" : "06-gui",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "06-gui_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-06-gui_autogen-Debug-83f5632756116a6527bf.json",
+					"name" : "06-gui_autogen",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/xs/\u684c\u9762/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug",
+		"source" : "/home/xs/\u684c\u9762/Project/ssh/rk3566-v4l2-base/06-gui"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

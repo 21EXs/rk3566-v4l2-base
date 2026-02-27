@@ -268,4 +268,22 @@ CMakeFiles/06-gui.dir/06-gui_autogen/mocs_compilation.cpp.o: \
  /opt/qt5.12.10-arm/include/QtGui/qcursor.h \
  /opt/qt5.12.10-arm/include/QtGui/qkeysequence.h \
  /opt/qt5.12.10-arm/include/QtWidgets/qtabwidget.h \
- /opt/qt5.12.10-arm/include/QtGui/qicon.h
+ /opt/qt5.12.10-arm/include/QtGui/qicon.h \
+ /home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/build/RK3566-Debug/06-gui_autogen/EWIEGA46WW/../../../../Socket_Client.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/socket.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/uio.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/uio.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/socket.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/socket_type.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/sockaddr.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/asm/socket.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/asm-generic/socket.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/asm/sockios.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/asm-generic/sockios.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/un.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/unistd.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/posix_opt.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/environments.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/bits/confname.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/getopt.h \
+ /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/include/c++/6.3.1/cstring

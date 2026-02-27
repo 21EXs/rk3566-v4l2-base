@@ -38,6 +38,8 @@ else()
     else()
         add_executable(06-gui
             ${PROJECT_SOURCES}
+            Socket_Client.cpp
+            Socket_Client.h
         )
     endif()
 endif()

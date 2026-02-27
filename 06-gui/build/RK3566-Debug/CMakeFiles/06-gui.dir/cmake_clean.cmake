@@ -6,6 +6,8 @@ file(REMOVE_RECURSE
   "06-gui.pdb"
   "CMakeFiles/06-gui.dir/06-gui_autogen/mocs_compilation.cpp.o"
   "CMakeFiles/06-gui.dir/06-gui_autogen/mocs_compilation.cpp.o.d"
+  "CMakeFiles/06-gui.dir/Socket_Client.cpp.o"
+  "CMakeFiles/06-gui.dir/Socket_Client.cpp.o.d"
   "CMakeFiles/06-gui.dir/main.cpp.o"
   "CMakeFiles/06-gui.dir/main.cpp.o.d"
   "CMakeFiles/06-gui.dir/mainwindow.cpp.o"
