@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include "MPP_Wrapper.h"
 #include "Socket_Sever.h"
+#include "rga_convert.h"
 
 void* thread1_function(void* arg);
 
@@ -21,115 +22,22 @@ static int fd = -1;
 int shm_fd;
 int g_fd_h264; 
 
-int NV21_To_BGRA(unsigned char* input, unsigned char* output, int width, int height) 
-{
-    if (width < 1 || height < 1 || input == NULL || output == NULL)
-        return 0;
-    
-    int frame_size = width * height;
-    int uv_offset = frame_size;
-    
-    // 使用字节指针
-    uint8_t* rgba = (uint8_t*)output;
-    
-    for (int y = 0; y < height; y++) 
-    {
-        for (int x = 0; x < width; x++) 
-        {
-            int y_index = y * width + x;
-            
-            // NV21 UV索引计算
-            int uv_index = (y/2) * width + (x/2) * 2;
-            
-            int y_val = input[y_index];
-            int v_val = input[uv_offset + uv_index];      // V分量
-            int u_val = input[uv_offset + uv_index + 1];  // U分量
-            
-            // YUV to RGB转换
-            int c = y_val - 16;
-            int d = u_val - 128;
-            int e = v_val - 128;
-            
-            int r = (298 * c + 409 * e + 128) >> 8;
-            int g = (298 * c - 100 * d - 208 * e + 128) >> 8;
-            int b = (298 * c + 516 * d + 128) >> 8;
-            
-            r = (r > 255) ? 255 : (r < 0) ? 0 : r;
-            g = (g > 255) ? 255 : (g < 0) ? 0 : g;
-            b = (b > 255) ? 255 : (b < 0) ? 0 : b;
-            
-            int pixel_index = y_index * 4;
-            
-            // 修正：改为RGBA格式（红色在前，蓝色在后）
-            rgba[pixel_index] = r;         // Red
-            rgba[pixel_index + 1] = g;     // Green
-            rgba[pixel_index + 2] = b;     // Blue
-            rgba[pixel_index + 3] = 0xFF;  // Alpha (不透明)
-        }
-    }
-    
-    return 1;
-}
-
-// int NV21_To_BGRA(unsigned char* input, unsigned char* output, int width, int height) 
-// {
-//     if (width < 1 || height < 1 || input == NULL || output == NULL)
-//         return 0;
-    
-//     int frame_size = width * height;
-//     int uv_offset = frame_size;
-    
-//     uint8_t* bgra = (uint8_t*)output;
-    
-//     for (int y = 0; y < height; y++) 
-//     {
-//         for (int x = 0; x < width; x++) 
-//         {
-//             int y_index = y * width + x;
-            
-//             int uv_index = (y/2) * width + (x/2) * 2;
-            
-//             int y_val = input[y_index];
-//             int v_val = input[uv_offset + uv_index];      // V分量
-//             int u_val = input[uv_offset + uv_index + 1];  // U分量
-            
-//             int c = y_val - 16;
-//             int d = u_val - 128;
-//             int e = v_val - 128;
-            
-//             int r = (298 * c + 409 * e + 128) >> 8;
-//             int g = (298 * c - 100 * d - 208 * e + 128) >> 8;
-//             int b = (298 * c + 516 * d + 128) >> 8;
-            
-//             r = (r > 255) ? 255 : (r < 0) ? 0 : r;
-//             g = (g> 255) ? 255 : (g < 0) ? 0 : g;
-//             b = (b > 255) ? 255 : (b < 0) ? 0 : b;
-            
-//             int pixel_index = y_index * 4;
-            
-//             bgra[pixel_index] = b;         // Blue
-//             bgra[pixel_index + 1] = g;     // Green
-//             bgra[pixel_index + 2] = r;     // Red
-//             bgra[pixel_index + 3] = 0xFF;  // Alpha (不透明)
-//         }
-//     }
-    
-//     return 1;
-// }
-
 void Take_ARGB_Shm(struct shared_memory* shm)
 {
     sem_wait(&shm_ptr->sem.capture_done);
     
     uint8_t* nv21_data = Get_Frame_Data_Offset(shm,NV21_TYPE ,shm->sem.Convert_Avail_Buf);
     uint8_t* bgra_data = Get_Frame_Data_Offset(shm,BGRA_TYPE ,shm->sem.Convert_Avail_Buf);
-    //转化
-    NV21_To_BGRA(nv21_data, bgra_data, WIDTH, HEIGHT);
+    
+    // 使用 RGA 硬件加速：NV21 → BGRA8888
+    if (RGA_NV21_To_BGRA(nv21_data, bgra_data, WIDTH, HEIGHT) != 0) 
+    {
+        fprintf(stderr, "[RGA] 转换失败！请检查 /dev/rga 设备\n");
+    }
+    
     UpdatePollID(CONVERT_TYPE);
 
     sem_post(&shm->sem.convert_done); 
-    // printf("已完成nv21转化为argb888格式 \n");
-    // usleep(10000);
 }
 
 int main() 
