@@ -16,4 +16,12 @@ int RGA_NV21_To_BGRA(unsigned char* src_nv21, unsigned char* dst_bgra, int width
  */
 int RGA_NV21_To_BGRA_Rotate90(unsigned char* src_nv21, unsigned char* dst_bgra, int width, int height);
 
+/*
+ * 将 RGBA 图像顺时针旋转 90 度（Rockchip RGA 硬件加速实现）
+ * 输入: src_rgba - RGBA 格式数据 (width × height)
+ * 输出: dst_rgba - 旋转后的 RGBA 数据 (height × width)
+ * 成功返回 0，失败返回 -1
+ */
+int RGA_Rotate90(unsigned char* src_rgba, unsigned char* dst_rgba, int width, int height);
+
 #endif /* RGA_CONVERT_H */

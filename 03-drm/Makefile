@@ -12,7 +12,10 @@ SRC_DIR = $(PROJECT_ROOT)/src
 BUILD_DIR = $(PROJECT_ROOT)/build
 INCLUDE_DIR = $(PROJECT_ROOT)/inc
 SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+# 添加 rga_convert.c（位于 02-shm/src/）
+RGA_CONVERT_SRC = /home/xs/桌面/Project/ssh/rk3566-v4l2-base/02-shm/src/rga_convert.c
+RGA_CONVERT_OBJ = $(BUILD_DIR)/rga_convert.o
+OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o) $(RGA_CONVERT_OBJ)
 
 # 目标文件名
 TARGET = $(PROJECT_ROOT)/drm_app
@@ -26,6 +29,10 @@ CFLAGS = -Wall -O2
 CFLAGS += -I$(INCLUDE_PATH) -I$(INCLUDE_DIR)
 # 添加DRM相关头文件路径
 CFLAGS += -I$(SYSROOT_PATH)/usr/include/libdrm
+# 添加RGA头文件路径
+CFLAGS += -I$(SYSROOT_PATH)/usr/include/rga
+# 添加02-shm的inc目录（引用rga_convert.h）
+CFLAGS += -I/home/xs/桌面/Project/ssh/rk3566-v4l2-base/02-shm/inc
 # 添加sysroot确保使用正确的库
 CFLAGS += --sysroot=$(SYSROOT_PATH)
 
@@ -34,7 +41,7 @@ LDFLAGS = -L$(SYSROOT_PATH)/usr/lib -L$(SYSROOT_PATH)/lib
 LDFLAGS += --sysroot=$(SYSROOT_PATH)
 
 # 链接库 - 03-drm项目需要的库
-LIBS = -ldrm -lpthread -lm
+LIBS = -ldrm -lpthread -lm -lrga
 
 # 默认目标
 all: check-env $(BUILD_DIR) $(TARGET)
@@ -50,6 +57,10 @@ $(TARGET): $(OBJS)
 # 编译源文件
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# 编译 rga_convert.c
+$(RGA_CONVERT_OBJ): $(RGA_CONVERT_SRC)
+	$(CC) $(CFLAGS) -c $(RGA_CONVERT_SRC) -o $(RGA_CONVERT_OBJ)
 
 # 检查环境
 check-env:

@@ -268,6 +268,15 @@ CMakeFiles/06-gui.dir/mainwindow.cpp.o: \
  /opt/qt5.12.10-arm/include/QtGui/qkeysequence.h \
  /opt/qt5.12.10-arm/include/QtWidgets/qtabwidget.h \
  /opt/qt5.12.10-arm/include/QtGui/qicon.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/QPushButton \
+ /opt/qt5.12.10-arm/include/QtWidgets/qpushbutton.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/qabstractbutton.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/QLabel \
+ /opt/qt5.12.10-arm/include/QtWidgets/qlabel.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/qframe.h \
+ /opt/qt5.12.10-arm/include/QtCore/QTimer \
+ /opt/qt5.12.10-arm/include/QtCore/qtimer.h \
+ /opt/qt5.12.10-arm/include/QtCore/qbasictimer.h \
  /home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/Socket_Client.h \
  /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/socket.h \
  /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/uio.h \
@@ -293,21 +302,28 @@ CMakeFiles/06-gui.dir/mainwindow.cpp.o: \
  /opt/qt5.12.10-arm/include/QtWidgets/qboxlayout.h \
  /opt/qt5.12.10-arm/include/QtWidgets/qgridlayout.h \
  /opt/qt5.12.10-arm/include/QtWidgets/QHBoxLayout \
- /opt/qt5.12.10-arm/include/QtWidgets/QFrame \
- /opt/qt5.12.10-arm/include/QtWidgets/qframe.h \
- /opt/qt5.12.10-arm/include/QtWidgets/QPushButton \
- /opt/qt5.12.10-arm/include/QtWidgets/qpushbutton.h \
- /opt/qt5.12.10-arm/include/QtWidgets/qabstractbutton.h \
- /opt/qt5.12.10-arm/include/QtWidgets/QSpacerItem \
- /opt/qt5.12.10-arm/include/QtWidgets/qlayoutitem.h \
- /opt/qt5.12.10-arm/include/QtCore/QDebug \
- /opt/qt5.12.10-arm/include/QtCore/qdebug.h \
+ /opt/qt5.12.10-arm/include/QtCore/QPropertyAnimation \
+ /opt/qt5.12.10-arm/include/QtCore/qpropertyanimation.h \
+ /opt/qt5.12.10-arm/include/QtCore/qvariantanimation.h \
+ /opt/qt5.12.10-arm/include/QtCore/qeasingcurve.h \
+ /opt/qt5.12.10-arm/include/QtCore/qabstractanimation.h \
+ /opt/qt5.12.10-arm/include/QtCore/qvariant.h \
  /opt/qt5.12.10-arm/include/QtCore/qmap.h \
  /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/include/c++/6.3.1/functional \
  /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/include/c++/6.3.1/typeinfo \
- /opt/qt5.12.10-arm/include/QtCore/qtextstream.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/QGraphicsOpacityEffect \
+ /opt/qt5.12.10-arm/include/QtWidgets/qgraphicseffect.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/QApplication \
+ /opt/qt5.12.10-arm/include/QtWidgets/qapplication.h \
+ /opt/qt5.12.10-arm/include/QtCore/qcoreapplication.h \
+ /opt/qt5.12.10-arm/include/QtCore/qcoreevent.h \
+ /opt/qt5.12.10-arm/include/QtCore/qeventloop.h \
+ /opt/qt5.12.10-arm/include/QtGui/qguiapplication.h \
+ /opt/qt5.12.10-arm/include/QtGui/qinputmethod.h \
  /opt/qt5.12.10-arm/include/QtCore/qlocale.h \
- /opt/qt5.12.10-arm/include/QtCore/qvariant.h \
+ /opt/qt5.12.10-arm/include/QtCore/QDebug \
+ /opt/qt5.12.10-arm/include/QtCore/qdebug.h \
+ /opt/qt5.12.10-arm/include/QtCore/qtextstream.h \
  /opt/qt5.12.10-arm/include/QtCore/qset.h \
  /opt/qt5.12.10-arm/include/QtCore/qcontiguouscache.h \
  /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/include/c++/6.3.1/iostream

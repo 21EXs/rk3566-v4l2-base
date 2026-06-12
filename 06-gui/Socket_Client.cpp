@@ -9,10 +9,8 @@
 #include <errno.h>
 #include <signal.h>
 #include <memory>
-#include <QDebug>
 
 #define SOCKET_SERVER_PATH "/tmp/unix_socket_server.sock"
-#define SOCKET_GUI_PATH "/tmp/unix_gui.sock"
 
 int SocketClient::Socket_Client_Init()
 {
@@ -24,7 +22,7 @@ int SocketClient::Socket_Client_Init()
 
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sun_family = AF_UNIX;
-    strncpy(server_addr.sun_path,SOCKET_SERVER_PATH,sizeof(server_addr.sun_path));
+    strncpy(server_addr.sun_path, SOCKET_SERVER_PATH, sizeof(server_addr.sun_path));
 
     if(connect(client_gui_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
     {
@@ -38,25 +36,19 @@ int SocketClient::Socket_Client_Init()
 
 ssize_t SocketClient::SendData(const char* data)
 {
-    // 检查socket是否有效
     if (client_gui_fd < 0) {
         std::cout << "错误：socket未连接" << std::endl;
         return -1;
     }
 
-    // 检查数据是否为空
     if (data == nullptr) {
         std::cout << "错误：发送数据为空" << std::endl;
         return -1;
     }
 
-    // 计算数据长度
     size_t length = strlen(data);
-
-    // 使用write发送数据
     ssize_t bytes_sent = write(client_gui_fd, data, length);
 
-    // 检查发送结果
     if (bytes_sent < 0) {
         std::cout << "发送失败: " << strerror(errno) << std::endl;
     } else if (bytes_sent == 0) {
@@ -66,4 +58,31 @@ ssize_t SocketClient::SendData(const char* data)
     }
 
     return bytes_sent;
+}
+
+ssize_t SocketClient::RecvData(char* buffer, size_t bufsize)
+{
+    if (client_gui_fd < 0) {
+        std::cout << "错误：socket未连接" << std::endl;
+        return -1;
+    }
+
+    if (buffer == nullptr || bufsize == 0) {
+        std::cout << "错误：接收缓冲区无效" << std::endl;
+        return -1;
+    }
+
+    memset(buffer, 0, bufsize);
+    ssize_t bytes_received = read(client_gui_fd, buffer, bufsize - 1);
+
+    if (bytes_received < 0) {
+        std::cout << "接收失败: " << strerror(errno) << std::endl;
+    } else if (bytes_received == 0) {
+        std::cout << "连接已关闭" << std::endl;
+    } else {
+        buffer[bytes_received] = '\0';
+        std::cout << "收到响应: " << buffer << std::endl;
+    }
+
+    return bytes_received;
 }

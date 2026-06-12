@@ -1,4 +1,7 @@
 #include "atomic_drm.h"
+#include "rga_convert.h"
+#include "im2d.h"
+#include "rga.h"
 
 static struct shared_memory *shm_ptr = NULL;
 int shm_fd;
@@ -165,9 +168,11 @@ int drm_start()
         fprintf(stderr, "无法获取共享内存\n");
         return -1;
     }
-    // 从共享内存的元数据中获取图像尺寸
-    int img_width = WIDTH;
-    int img_height = HEIGHT;
+    // 共享内存中的 BGRA 数据已经是旋转后的（由 shm_app 完成 NV21→BGRA+旋转90度）
+    // 旋转后：img_width_rotated = HEIGHT = 720, img_height_rotated = WIDTH = 1280
+    // 屏幕是竖屏 720×1280，所以旋转后的数据正好满屏显示
+    int img_width = HEIGHT;   // 旋转后宽度 = 原高度 = 720
+    int img_height = WIDTH;   // 旋转后高度 = 原宽度 = 1280
     
     if (create_framebuffer(&my_dev, screen_width, screen_height) < 0) 
     {
@@ -178,35 +183,24 @@ int drm_start()
     // 清空屏幕为黑色
     memset(my_dev.fb_data, 0, my_dev.fb_size);
     
-    // 计算居中位置
-    int start_x = (screen_width - img_width) / 2;
-    int start_y = (screen_height - img_height) / 2;
-    
-    if (start_x < 0) start_x = 0;
-    if (start_y < 0) start_y = 0;
-    
-    printf("图像显示位置: (%d, %d)\n", start_x, start_y);
-    
-    // 直接将ARGB数据居中拷贝到帧缓冲
-    uint8_t* src = 0;
+    printf("图像显示: %dx%d (已旋转), 屏幕: %dx%d\n", img_width, img_height, screen_width, screen_height);
+
     uint8_t* dst = 0;
 
     while (1) 
     {
-        // printf("进入循环\n");
         sem_wait(&shm_ptr->sem.convert_done);
         
-        // 直接获取BGRA数据起始地址
-        // uint8_t* bgra_data = GetAvailPollAddr(BGRA_TYPE);
-        uint8_t* bgra_data = Get_Frame_Data_Offset(shm_ptr,BGRA_TYPE ,shm_ptr->sem.BGRA_Avail_Buf);
+        // 获取BGRA数据起始地址（已经是旋转后的 720×1280）
+        uint8_t* bgra_data = Get_Frame_Data_Offset(shm_ptr, BGRA_TYPE, shm_ptr->sem.BGRA_Avail_Buf);
 
         dst = (uint8_t*)my_dev.fb_data;
 
-        for (int y = 0; y < img_height && (start_y + y) < screen_height; y++)
+        // 直接满屏拷贝（旋转后的数据尺寸 = 720×1280，与屏幕一致）
+        for (int y = 0; y < img_height && y < screen_height; y++)
         {
             int src_index = y * img_width * 4;
-            int dst_index = ((start_y + y) * screen_width + start_x) * 4;
-
+            int dst_index = y * screen_width * 4;
             memcpy(dst + dst_index, bgra_data + src_index, img_width * 4);
         }
         
@@ -220,7 +214,7 @@ int drm_start()
         UpdatePollID(BGRA_TYPE);
         sem_post(&shm_ptr->sem.display_done);
     }
-    
+
     // 清理资源
     if (my_dev.fb_data) 
     {

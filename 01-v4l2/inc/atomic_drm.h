@@ -14,8 +14,6 @@
 #include "disp_manager.h"
 #include "drm_fourcc.h"
 #include "shm.h"
-#define WIDTH   720
-#define HEIGHT  1280
 
 struct drm_device {
     int fd;                          // 设备文件描述符

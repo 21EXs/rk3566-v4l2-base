@@ -2,12 +2,16 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QPushButton>
+#include <QLabel>
+#include <QTimer>
 #include "Socket_Client.h"
-// 前向声明
-class QPushButton;
-class QFrame;
-class QWidget;
-class SocketServer;  // 如果需要的话
+
+// ActionCode 定义
+#define ACTION_PHOTO        1001    // Qt → 后端：触发拍照
+#define ACTION_PHOTO_RESULT 1002    // 后端 → Qt：拍照完成通知
+#define ACTION_RECORD_START 2001    // Qt → 后端：开始录像（预留）
+#define ACTION_RECORD_STOP  2002    // Qt → 后端：停止录像（预留）
 
 class MainWindow : public QMainWindow
 {
@@ -17,25 +21,23 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void onPhotoClicked();
+    void onToastTimeout();
+
 private:
-    // 新增的私有方法声明
-    void initSocketServer();
     void initUI();
-    void initConnections();
-    void createButtons();
-    void createCameraFrame();
-    void setupMainLayout(QWidget *centralWidget);
+    void initSocket();
+    void sendActionCode(int code);
+    void showToast(const QString &text, bool success);
 
-    // 成员变量声明
-    QPushButton *btnPhoto = nullptr;
-    QPushButton *btnRecord = nullptr;
-    QPushButton *btnStream = nullptr;
-    QFrame *camFrame = nullptr;
-    QWidget *buttonContainer = nullptr;
-    QWidget *frameContainer = nullptr;
+    // UI 组件
+    QPushButton *btnPhoto;
+    QLabel *toastLabel;
+    QTimer *toastTimer;
 
+    // Socket
     SocketClient *socketClient;
-
 };
 
 #endif // MAINWINDOW_H

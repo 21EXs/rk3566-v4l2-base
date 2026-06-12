@@ -341,8 +341,8 @@ void v4l2_start()
 	}
 	struct v4l2_format fmt = {0};
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-    fmt.fmt.pix_mp.width = 640;
-    fmt.fmt.pix_mp.height = 480;
+    fmt.fmt.pix_mp.width = 1280;
+    fmt.fmt.pix_mp.height = 720;
     fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV21;
 	
 	if (xioctl(fd, VIDIOC_S_FMT, &fmt) == -1)
@@ -350,7 +350,7 @@ void v4l2_start()
         handle_error("设置格式");
     }
 
-	printf("格式设置成功: 640x480 NV21\n");
+	printf("格式设置成功: 1280x720 NV21\n");
 
     set_frame_rate(60);
 

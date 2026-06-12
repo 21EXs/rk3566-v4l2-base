@@ -29,11 +29,48 @@ void Take_ARGB_Shm(struct shared_memory* shm)
     uint8_t* nv21_data = Get_Frame_Data_Offset(shm,NV21_TYPE ,shm->sem.Convert_Avail_Buf);
     uint8_t* bgra_data = Get_Frame_Data_Offset(shm,BGRA_TYPE ,shm->sem.Convert_Avail_Buf);
     
-    // 使用 RGA 硬件加速：NV21 → BGRA8888
-    if (RGA_NV21_To_BGRA(nv21_data, bgra_data, WIDTH, HEIGHT) != 0) 
+    // malloc 临时 buffer（RGA 对堆内存的 MMU 映射通常没问题）
+    // 注意：旋转90度后，BGRA 数据变为 HEIGHT × WIDTH
+    unsigned char* tmp_nv21 = (unsigned char*)malloc(NV21_SIZE(WIDTH, HEIGHT));
+    unsigned char* tmp_bgra = (unsigned char*)malloc(ARGB_SIZE(HEIGHT, WIDTH));  // 旋转后宽高互换
+    if (!tmp_nv21 || !tmp_bgra) 
     {
-        fprintf(stderr, "[RGA] 转换失败！请检查 /dev/rga 设备\n");
+        fprintf(stderr, "[RGA] malloc 临时 buffer 失败\n");
+        if (tmp_nv21) free(tmp_nv21);
+        if (tmp_bgra) free(tmp_bgra);
+        UpdatePollID(CONVERT_TYPE);
+        sem_post(&shm->sem.convert_done);
+        return;
     }
+    
+    // 从共享内存拷到临时 buffer
+    memcpy(tmp_nv21, nv21_data, NV21_SIZE(WIDTH, HEIGHT));
+    
+    // 使用 RGA 硬件加速：NV21 → BGRA8888 + 旋转90度（适配竖屏 720×1280）
+    // 一步完成格式转换和旋转，输出为 HEIGHT × WIDTH = 720 × 1280
+    if (RGA_NV21_To_BGRA_Rotate90(tmp_nv21, tmp_bgra, WIDTH, HEIGHT) != 0) 
+    {
+        fprintf(stderr, "[RGA] 转换+旋转失败，尝试不旋转仅转换...\n");
+        // 回退：仅转换不旋转
+        if (RGA_NV21_To_BGRA(tmp_nv21, tmp_bgra, WIDTH, HEIGHT) != 0)
+        {
+            fprintf(stderr, "[RGA] 转换也失败！直接拷贝原始数据\n");
+            memcpy(bgra_data, tmp_nv21, NV21_SIZE(WIDTH, HEIGHT));
+        }
+        else
+        {
+            // 仅转换成功，但未旋转，数据是 WIDTH × HEIGHT
+            memcpy(bgra_data, tmp_bgra, ARGB_SIZE(WIDTH, HEIGHT));
+        }
+    }
+    else
+    {
+        // 转换+旋转成功，数据是 HEIGHT × WIDTH = 720 × 1280
+        memcpy(bgra_data, tmp_bgra, ARGB_SIZE(HEIGHT, WIDTH));
+    }
+    
+    free(tmp_nv21);
+    free(tmp_bgra);
     
     UpdatePollID(CONVERT_TYPE);
 
@@ -80,6 +117,9 @@ int main()
     }
     else if (encode_pid > 0)//子进程socket和父进程
     {
+        // 将共享内存指针传递给 socket 模块（fork 后子进程继承 mmap，指针仍然有效）
+        Socket_SetShmPtr(shm_ptr);
+
         // 父进程中再次fork创建socket监听子进程
         pid_t socket_pid = fork();
         

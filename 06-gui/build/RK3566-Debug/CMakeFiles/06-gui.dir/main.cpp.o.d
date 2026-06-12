@@ -268,6 +268,15 @@ CMakeFiles/06-gui.dir/main.cpp.o: \
  /opt/qt5.12.10-arm/include/QtGui/qkeysequence.h \
  /opt/qt5.12.10-arm/include/QtWidgets/qtabwidget.h \
  /opt/qt5.12.10-arm/include/QtGui/qicon.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/QPushButton \
+ /opt/qt5.12.10-arm/include/QtWidgets/qpushbutton.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/qabstractbutton.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/QLabel \
+ /opt/qt5.12.10-arm/include/QtWidgets/qlabel.h \
+ /opt/qt5.12.10-arm/include/QtWidgets/qframe.h \
+ /opt/qt5.12.10-arm/include/QtCore/QTimer \
+ /opt/qt5.12.10-arm/include/QtCore/qtimer.h \
+ /opt/qt5.12.10-arm/include/QtCore/qbasictimer.h \
  /home/xs/桌面/Project/ssh/rk3566-v4l2-base/06-gui/Socket_Client.h \
  /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/socket.h \
  /home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/aarch64-linux-gnu/libc/usr/include/sys/uio.h \

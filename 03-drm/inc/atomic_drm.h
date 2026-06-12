@@ -14,8 +14,11 @@
 #include "disp_manager.h"
 #include "drm_fourcc.h"
 #include "shm.h"
-#define WIDTH   640
-#define HEIGHT  480
+
+// RGA 旋转控制宏
+// 1 = 在 DRM 显示时用 RGA 做旋转90度（适配竖屏）
+// 0 = 不旋转，直接显示
+#define RGA_ROTATE_ENABLE  1
 
 struct drm_device {
     int fd;                          // 设备文件描述符

@@ -13,8 +13,8 @@
 #define SHM_NAME "/shm_video_data"
 #define MAX_TEXT_SIZE 1024
 
-#define WIDTH  640 
-#define HEIGHT 480
+#define WIDTH  1280 
+#define HEIGHT 720
 
 #define NV21_TYPE 0
 #define BGRA_TYPE 1

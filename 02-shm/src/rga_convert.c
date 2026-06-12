@@ -70,10 +70,39 @@ int RGA_NV21_To_BGRA_Rotate90(unsigned char* src_nv21, unsigned char* dst_bgra, 
 
     // 使用 improcess 一步完成格式转换 + 旋转 90 度
     // improcess 会根据 src/dst 的 format 自动进行颜色格式转换
-    IM_STATUS ret = improcess(src, dst, pat, src_rect, dst_rect, pat_rect,IM_HAL_TRANSFORM_ROT_90);
+    IM_STATUS ret = improcess(src, dst, pat, src_rect, dst_rect, pat_rect, IM_HAL_TRANSFORM_ROT_90);
     if (ret <= IM_STATUS_FAILED) 
     {
         fprintf(stderr, "[RGA] improcess (旋转90) 失败: %s (ret=%d)\n", imStrError(ret), ret);
+        return -1;
+    }
+
+    return 0;
+}
+
+/*
+ * 使用 Rockchip RGA 硬件加速将 RGBA 图像顺时针旋转 90 度
+ * 输入: src_rgba - RGBA 格式数据 (width × height)
+ * 输出: dst_rgba - 旋转后的 RGBA 数据 (height × width)
+ * 成功返回 0，失败返回 -1
+ */
+int RGA_Rotate90(unsigned char* src_rgba, unsigned char* dst_rgba, int width, int height)
+{
+    if (width < 1 || height < 1 || src_rgba == NULL || dst_rgba == NULL)
+        return -1;
+
+    // 源 buffer（原始宽高，RGBA 格式）
+    rga_buffer_t src = wrapbuffer_virtualaddr(src_rgba, width, height, RK_FORMAT_RGBA_8888);
+
+    // 目标 buffer（旋转 90 度后宽高互换，RGBA 格式）
+    rga_buffer_t dst = wrapbuffer_virtualaddr(dst_rgba, height, width, RK_FORMAT_RGBA_8888);
+
+    // 使用 imrotate 进行旋转
+    // 最后一个参数 1 表示同步模式
+    IM_STATUS ret = imrotate(src, dst, IM_HAL_TRANSFORM_ROT_90, 1);
+    if (ret <= IM_STATUS_FAILED) 
+    {
+        fprintf(stderr, "[RGA] imrotate 失败: %s (ret=%d)\n", imStrError(ret), ret);
         return -1;
     }
 

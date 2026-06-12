@@ -1,3 +1,5 @@
+#include "Socket_Sever.h"
+#include "shm.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,15 +9,17 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 
 #define SOCKET_SERVER_PATH "/tmp/unix_socket_server.sock"
 #define BUFFER_SIZE 1024
 #define MAX_CLIENTS 5
 
-// 全局变量（在实际项目中可以考虑使用结构体封装）
+// 全局变量
 static int server_fd = -1;
 static int client_fd = -1;
 static struct sockaddr_un server_addr, client_addr;
+static struct shared_memory *g_shm_ptr = NULL;  // 共享内存指针
 
 void cleanup_socket(const char *path) 
 {
@@ -44,32 +48,93 @@ void signal_handler(int sig)
     }
 }
 
-// 初始化服务器，返回服务器文件描述符
+// 设置共享内存指针
+void Socket_SetShmPtr(void *shm_ptr)
+{
+    g_shm_ptr = (struct shared_memory *)shm_ptr;
+}
+
+// 保存 BGRA 数据为 PPM 文件（简单可靠，无需 libjpeg）
+// PPM 格式：P6\n宽度 高度\n255\nRGB数据...
+static int save_bgra_to_ppm(const char *filename, uint8_t *bgra_data, int width, int height)
+{
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        perror("打开文件失败");
+        return -1;
+    }
+
+    // PPM 头
+    fprintf(fp, "P6\n%d %d\n255\n", width, height);
+
+    // BGRA → RGB（去掉 A 通道，交换 B 和 R）
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = (y * width + x) * 4;
+            uint8_t b = bgra_data[idx + 0];
+            uint8_t g = bgra_data[idx + 1];
+            uint8_t r = bgra_data[idx + 2];
+            // uint8_t a = bgra_data[idx + 3]; // 忽略 Alpha
+            fputc(r, fp);
+            fputc(g, fp);
+            fputc(b, fp);
+        }
+    }
+
+    fclose(fp);
+    return 0;
+}
+
+// 执行拍照
+static int take_photo()
+{
+    if (!g_shm_ptr) {
+        fprintf(stderr, "[拍照] 共享内存未初始化\n");
+        return -1;
+    }
+
+    // 从共享内存读取当前 BGRA 帧（已旋转为 720×1280）
+    uint8_t *bgra_data = Get_Frame_Data_Offset(g_shm_ptr, BGRA_TYPE, g_shm_ptr->sem.BGRA_Avail_Buf);
+    if (!bgra_data) {
+        fprintf(stderr, "[拍照] 获取 BGRA 数据失败\n");
+        return -1;
+    }
+
+    // 生成文件名：/mnt/photo_YYYYMMDD_HHMMSS.ppm
+    char filename[128];
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    strftime(filename, sizeof(filename), "/mnt/photo_%Y%m%d_%H%M%S.ppm", tm_info);
+
+    // 旋转后的尺寸：width=HEIGHT=720, height=WIDTH=1280
+    int ret = save_bgra_to_ppm(filename, bgra_data, HEIGHT, WIDTH);
+    if (ret == 0) {
+        printf("[拍照] 成功保存: %s (%dx%d)\n", filename, HEIGHT, WIDTH);
+    } else {
+        fprintf(stderr, "[拍照] 保存失败\n");
+    }
+
+    return ret;
+}
+
+// 初始化服务器
 int Socket_Server_Init() 
 {
-    // 设置信号处理器
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
     
-    // 清理可能的旧socket文件
     cleanup_socket(SOCKET_SERVER_PATH);
     
-    // 创建Unix域socket
-    /* AF_UNIX: 指定Unix域socket
-       SOCK_STREAM: 流式套接字
-       0: 默认协议*/
     if ((server_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) 
     {
         perror("socket创建失败");
         return -1;
     }
     
-    // 配置服务器地址
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sun_family = AF_UNIX;
     strncpy(server_addr.sun_path, SOCKET_SERVER_PATH, sizeof(server_addr.sun_path) - 1);
     
-    // 绑定socket到地址
     if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) 
     {
         perror("绑定失败");
@@ -78,11 +143,9 @@ int Socket_Server_Init()
         return -1;
     }
     
-    // 设置socket文件权限（可选）
     chmod(SOCKET_SERVER_PATH, 0777);
     
-    // 监听连接
-    if (listen(server_fd, MAX_CLIENTS) == -1) //将主动套接字转为被动模式：让服务器准备好接受客户端的连接请求；设置等待队列：MAX_CLIENTS指定了等待处理连接的最大队列长度
+    if (listen(server_fd, MAX_CLIENTS) == -1)
     {
         perror("监听失败");
         close(server_fd);
@@ -96,21 +159,19 @@ int Socket_Server_Init()
     return server_fd;
 }
 
-// 监听并处理客户端连接（阻塞式）
+// 监听并接受客户端连接
 int Socket_Server_Listen() 
 {
     socklen_t client_len;
-    char buffer[BUFFER_SIZE];
     
     if (server_fd == -1) 
     {
-        fprintf(stderr, "服务器未初始化或初始化失败\n");
+        fprintf(stderr, "服务器未初始化\n");
         return -1;
     }
     
     printf("等待客户端连接...\n");
     
-    // 接受客户端连接
     client_len = sizeof(client_addr);
     memset(&client_addr, 0, sizeof(client_addr));
     
@@ -121,11 +182,10 @@ int Socket_Server_Listen()
     }
     
     printf("客户端已连接\n");
-    
     return client_fd;
 }
 
-// 处理客户端消息
+// 处理客户端消息（基于 ActionCode 协议）
 int Socket_Server_ProcessClient()
 {
     char buffer[BUFFER_SIZE];
@@ -136,53 +196,40 @@ int Socket_Server_ProcessClient()
         return -1;
     }
     
-    // 处理客户端请求
     ssize_t bytes_received;
     while ((bytes_received = recv(client_fd, buffer, BUFFER_SIZE - 1, 0)) > 0) 
     {
         buffer[bytes_received] = '\0';
         printf("收到消息: %s\n", buffer);
         
-        // 简单回显
-        if (send(client_fd, buffer, bytes_received, 0) == -1) 
-        {
-            perror("发送失败");
-            break;
-        }
+        int action_code = atoi(buffer);
         
-        if (strcmp(buffer, "photo") == 0) 
+        switch (action_code) 
         {
+            case ACTION_PHOTO:  // 1001: 拍照
+            {
+                printf("[Action] 拍照请求\n");
+                int ret = take_photo();
+                
+                // 响应: "1002:1" 成功, "1002:0" 失败
+                char response[32];
+                snprintf(response, sizeof(response), "%d:%d", ACTION_PHOTO_RESULT, (ret == 0) ? 1 : 0);
+                send(client_fd, response, strlen(response), 0);
+                printf("[Action] 拍照响应: %s\n", response);
+                break;
+            }
 
-            printf("客户端请求拍照\n");
-            break;
-        }
-        if (strcmp(buffer, "stream") == 0) 
-        {
+            case ACTION_RECORD_START:  // 2001: 开始录像（预留）
+                printf("[Action] 开始录像请求（预留，未实现）\n");
+                break;
 
-            printf("客户端请求编码\n");
-            break;
-        }
-        if (strcmp(buffer, "push") == 0) 
-        {
+            case ACTION_RECORD_STOP:   // 2002: 停止录像（预留）
+                printf("[Action] 停止录像请求（预留，未实现）\n");
+                break;
 
-            printf("客户端请求退流\n");
-            break;
-        }
-
-        // 如果是退出命令
-        if (strcmp(buffer, "exit") == 0) 
-        {
-            printf("客户端请求断开连接\n");
-            break;
-        }
-        
-        if (strcmp(buffer, "shutdown") == 0) 
-        {
-            printf("收到关机命令\n");
-            close(client_fd);
-            close(server_fd);
-            cleanup_socket(SOCKET_SERVER_PATH);
-            exit(0);
+            default:
+                printf("[Action] 未知 ActionCode: %d\n", action_code);
+                break;
         }
     }
     
@@ -191,10 +238,10 @@ int Socket_Server_ProcessClient()
         perror("接收失败");
     }
     
+    printf("客户端断开连接\n");
     return 0;
 }
 
-// 关闭客户端连接
 void Socket_Server_CloseClient()
 {
     if (client_fd != -1) 
@@ -205,11 +252,9 @@ void Socket_Server_CloseClient()
     }
 }
 
-// 关闭服务器
 void Socket_Server_Shutdown()
 {
     printf("正在关闭服务器...\n");
-    
     Socket_Server_CloseClient();
     
     if (server_fd != -1) 
@@ -220,19 +265,4 @@ void Socket_Server_Shutdown()
     }
     
     cleanup_socket(SOCKET_SERVER_PATH);
-}
-
-void PhotoCallBack()
-{
-
-}
-
-void StreamCallBack()
-{
-    
-}
-
-void PushCallBack()
-{
-    
 }

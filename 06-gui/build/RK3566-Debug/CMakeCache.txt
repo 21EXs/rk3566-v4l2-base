@@ -29,7 +29,8 @@ CMAKE_ADDR2LINE:FILEPATH=/home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebu
 //Path to a program.
 CMAKE_AR:FILEPATH=/home/xs/develop/TaiShanPie/Linux-sdk/sdk/Release/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-ar
 
-//No help, variable specified on the command line.
+//Choose the type of build, options are: None Debug Release RelWithDebInfo
+// MinSizeRel ...
 CMAKE_BUILD_TYPE:STRING=Debug
 
 //Enable/Disable color output during build.
