@@ -149,13 +149,20 @@ int drm_start()
     system("killall weston 2>/dev/null");
     sleep(1);
     
-    
-
     if (init_drm_device(&my_dev) < 0) 
     {
         printf("DRM设备初始化失败\n");
         return -1;
     }
+
+    drmModeRes *res = drmModeGetResources(drm_fd);
+    if (!res) 
+    {
+        perror("drmModeGetResources");
+        close(drm_fd);
+        return -1;
+    }
+
 
     // 获取屏幕分辨率
     int screen_width = my_dev.mode.hdisplay;
