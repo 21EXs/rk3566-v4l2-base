@@ -36,6 +36,7 @@ struct drm_device {
 };
 int create_test_pattern(uint32_t *buffer, int width, int height);
 int init_drm_device(struct drm_device *dev);
-int create_framebuffer(struct drm_device *dev, int width, int height);
+int create_framebuffer(struct drm_device *dev, int width, int height, uint32_t format);
+int find_overlay_plane(int fd);
 int drm_start();
 #endif
